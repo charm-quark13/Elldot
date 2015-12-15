@@ -50,8 +50,8 @@ C        C0 READ IN (DEFINES INITIAL SHAPE OF WELL)
 C        2ND TERM IN C DEFINES THE OSCILLATION OF WELL IN TIME
 C*****===================================================================*****
 
-C             C = C0+B*DSIN(OMEGAC*(T(STEP)+(0.1D-3*INVD)/2))
-              C = C0
+             C = C0+B*DSIN(OMEGAC*(T(STEP)+(0.1D-3*INVD)/2))
+C             C = C0
 
 C*****===================================================================*****
 C     SETTING THE VALUE OF R ACCORDING TO LOG GRID
