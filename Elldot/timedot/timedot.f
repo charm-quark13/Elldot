@@ -29,7 +29,7 @@
      &               RHO(NR,3),RHOUP(NR,3),RHODOWN(NR,3),ZETA(NR,3)
       DOUBLE PRECISION C,UXSUM,DXSUM,
      &                 TOTAL1(3),TOTAL2(3),TOTAL3,TOTAL4,TOTAL5,TOTAL6,
-     &                 NORMU,NORMD,Y(NR)
+     &                 NORMU,NORMD,Y(NR),REXP
       INTEGER IPIVU(MUP),IPIVD(MDN),FILES,IERR
 
       PARAMETER(IONE=(0.D0,1.D0),ONE=(1.D0,0.D0),ZERO=(0.D0,0.D0))
@@ -50,7 +50,7 @@ C        C0 READ IN (DEFINES INITIAL SHAPE OF WELL)
 C        2ND TERM IN C DEFINES THE OSCILLATION OF WELL IN TIME
 C*****===================================================================*****
 
-             C = C0+B*DSIN(OMEGAC*(T(STEP)+(0.1D-3*INVD)/2))
+             C = C0+A*DSIN(1.002D0*OMEGAC*(T(STEP)+(0.1D-3*INVD)/2))
 C             C = C0
 
 C*****===================================================================*****
@@ -273,6 +273,18 @@ C*****====================================================================*****
 
              WRITE(*,*) 'UP norm:',NORMU,'DOWN norm:', NORMD
               
+C*****=============================================================*****
+C***     <r> (density expectation value calculation)                 ***
+C*****=============================================================*****
+             DO 206 K=1,NR
+206             Y(K) = RHOUP(K,1)*RR(K)**2
+
+             CALL DAVINT(RR,Y,NR,0.D0,RR(NR),REXP,IERR)             
+
+             REXP = 2.0D0*PI*REXP
+
+             WRITE(3,*)STEP,DBLE(REXP)
+
              WRITE(*,*) 'iteration',STEP,'completed'
              
 208          CONTINUE
