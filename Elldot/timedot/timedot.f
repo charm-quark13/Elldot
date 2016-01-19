@@ -43,7 +43,7 @@ C**** BEGINNING OF THE TIME ITERATION LOOP                                ****
 C*****===================================================================*****
 
       DO 13 STEP=1,NT
-         T(STEP)= T(STEP)+0.1D-3*INVD
+         T(STEP)= T(STEP)+0.1D-5*INVD
 C*****===================================================================*****
 C     SETTING UP PARABOLIC WELL [ f(r)=0.5*C*r**2 ]
 C        C0 READ IN (DEFINES INITIAL SHAPE OF WELL) 
@@ -284,6 +284,8 @@ C*****=============================================================*****
              REXP = 2.0D0*PI*REXP
 
              WRITE(3,*)STEP,DBLE(REXP)
+             WRITE(20,*) STEP,DBLE(NORMU)
+             WRITE(21,*) STEP,DBLE(NORMD)
 
              WRITE(*,*) 'iteration',STEP,'completed'
              
