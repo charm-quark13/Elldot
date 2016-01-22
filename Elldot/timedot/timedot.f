@@ -6,7 +6,7 @@
       INCLUDE 'grid.inc'
       INCLUDE 'mode.inc'
 
-      DOUBLE PRECISION TOL,R0,HA0,BB,MUBOHR,G,OMEGA
+      DOUBLE PRECISION TOL,R0,HA0,BB,MUBOHR,G,OMEGA,E(6,2)
       INTEGER I,J,K,N,STEP,MUP,MDN,NUDIM,NDDIM,INFO
       
       PARAMETER (NUDIM =MAX(NU,1), NDDIM=MAX(ND,1))
@@ -27,15 +27,17 @@
 
       DOUBLE PRECISION T(NT),R(NR),RR(NR),POTU(MUP),POTD(MDN),
      &               RHO(NR,3),RHOUP(NR,3),RHODOWN(NR,3),ZETA(NR,3)
-      DOUBLE PRECISION C,UXSUM,DXSUM,
-     &                 TOTAL1(3),TOTAL2(3),TOTAL3,TOTAL4,TOTAL5,TOTAL6,
+      DOUBLE PRECISION C,UXSUM,DXSUM,wC,
      &                 NORMU,NORMD,Y(NR),REXP
       INTEGER IPIVU(MUP),IPIVD(MDN),FILES,IERR
 
       PARAMETER(IONE=(0.D0,1.D0),ONE=(1.D0,0.D0),ZERO=(0.D0,0.D0))
       PARAMETER(FILES = 6)
-      
+
+      READ(33,*) E
+         wC = E(2,2) - E(1,2)
       DO 12 I=1,NT   
+
          T(I) = 0.D0
 12    CONTINUE
 C*****===================================================================*****
@@ -50,7 +52,7 @@ C        C0 READ IN (DEFINES INITIAL SHAPE OF WELL)
 C        2ND TERM IN C DEFINES THE OSCILLATION OF WELL IN TIME
 C*****===================================================================*****
 
-             C = C0+A*DSIN(1.002D0*OMEGAC*(T(STEP)+(0.1D-3*INVD)/2))
+             C = C0+A*DSIN(wC*(T(STEP)+(0.1D-5*INVD)/2))
 C             C = C0
 
 C*****===================================================================*****
