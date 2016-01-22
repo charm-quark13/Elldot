@@ -36,25 +36,26 @@
 
       READ(33,*) E
          wC = E(2,2) - E(1,2)
-      DO 12 I=1,NT   
 
+      DO 12 I=1,NT   
          T(I) = 0.D0
 12    CONTINUE
+
 C*****===================================================================*****
 C**** BEGINNING OF THE TIME ITERATION LOOP                                ****
 C*****===================================================================*****
 
       DO 13 STEP=1,NT
-         T(STEP)= T(STEP)+0.1D-5*INVD
+         T(STEP)= T(STEP)+1.572D-2
 C*****===================================================================*****
 C     SETTING UP PARABOLIC WELL [ f(r)=0.5*C*r**2 ]
 C        C0 READ IN (DEFINES INITIAL SHAPE OF WELL) 
 C        2ND TERM IN C DEFINES THE OSCILLATION OF WELL IN TIME
 C*****===================================================================*****
 
-             C = C0+A*DSIN(wC*(T(STEP)+(0.1D-5*INVD)/2))
+             C = C0+A*DSIN(wC*(T(STEP)+(1.572D-2)/2))
 C             C = C0
-
+              write(*,*) T(step), C
 C*****===================================================================*****
 C     SETTING THE VALUE OF R ACCORDING TO LOG GRID
 C*****===================================================================*****
