@@ -25,7 +25,7 @@
      &               NDX(MDN,MDN),NUX(MUP,MUP),
      &               UXTC(MUP,NUDIM),DXTC(MDN,NDDIM)
 
-      DOUBLE PRECISION T(NT),R(NR),RR(NR),POTU(MUP),POTD(MDN),
+      DOUBLE PRECISION T,R(NR),RR(NR),POTU(MUP),POTD(MDN),
      &               RHO(NR,3),RHOUP(NR,3),RHODOWN(NR,3),ZETA(NR,3)
       DOUBLE PRECISION C,UXSUM,DXSUM,wC,
      &                 NORMU,NORMD,Y(NR),REXP
@@ -37,25 +37,21 @@
       READ(33,*) E
          wC = E(2,2) - E(1,2)
 
-      DO 12 I=1,NT   
-         T(I) = 0.D0
-12    CONTINUE
-
 C*****===================================================================*****
 C**** BEGINNING OF THE TIME ITERATION LOOP                                ****
 C*****===================================================================*****
 
       DO 13 STEP=1,NT
-         T(STEP)= T(STEP)+1.572D-2
+         T = T + DT
 C*****===================================================================*****
 C     SETTING UP PARABOLIC WELL [ f(r)=0.5*C*r**2 ]
 C        C0 READ IN (DEFINES INITIAL SHAPE OF WELL) 
 C        2ND TERM IN C DEFINES THE OSCILLATION OF WELL IN TIME
 C*****===================================================================*****
 
-             C = C0+A*DSIN(wC*(T(STEP)+(1.572D-2)/2))
+             C = C0+A*DSIN(wC*(T + DT/2))
 C             C = C0
-              write(*,*) T(step), C
+              write(*,*) T, C
 C*****===================================================================*****
 C     SETTING THE VALUE OF R ACCORDING TO LOG GRID
 C*****===================================================================*****
@@ -100,25 +96,43 @@ C*****====================================================================*****
              DO 41 J=1,NLU
              DO 41 I=1,NR
                 MAINDIAGU((J-1)*NR+I)=ZERO
-                OFFDIAGU((J-1)*NR+I)=ZERO
 41           CONTINUE
 
+           NH = (NLU+1)/2
              DO 42 J=1,NLU
-             DO 42 I=1,NR
-                MAINDIAGU((J-1)*NR+I)= INVD + POTU(I)
-                OFFDIAGU((J-1)*NR+I) =(-0.5D0)*INVD
+             L=J-NH
+
+                DO 421 I=1,NR
+421                MAINDIAGU((J-1)*NR+I) = 
+     &                         (1.D0/DR**2+L**2*0.5D0)*DEXP(-2.D0*R(I))
+     &                           + POTU(I) 
+
+                   MAINDIAGU((J-1)*NR+1) = MAINDIAGU((J-1)*NR+1)
+     &                           - (0.5D0/DR**2)*DEXP(-2.D0*R(1))
+     &                           * DEXP(-ABS(L)*(R(1)-R0))
+
 42           CONTINUE
+
+             DO 422 J=1,NLU
+
+               OFFDIAGU((J-1)*NR+NR)= ZERO
+            
+                 DO 423 I=1,NR-1
+423                 OFFDIAGU((J-1)*NR+I) = -(0.5D0/DR**2)
+     &                                   *DEXP(-R(I)-R(I+1))
+422          CONTINUE
+
 C*****====================================================================*****
-C***  COMPILING THE HAMILTONIAN ACCORDING TO CRANK-NICHOLSON                ***
+C***  COMPILING THE HAMILTONIAN ACCORDING TO CRANK-NICOLSON                 ***
 C***     (1+iH*t*0.5)PSI(n+1) = (1-iH*t*0.5)PSI(n)                          ***
 C*****====================================================================*****
 
              DO 43 I=1,MUP
-                HAMUP(I,I) = MAINDIAGU(I)*IONE*0.5D0*T(STEP)
+                HAMUP(I,I) = MAINDIAGU(I)*IONE*0.5D0*DT
 43           CONTINUE
       
              DO 44 I=1,MUP-1
-                HAMUP(I,I+1) = OFFDIAGU(I)*IONE*0.5D0*T(STEP)
+                HAMUP(I,I+1) = OFFDIAGU(I)*IONE*0.5D0*DT
 44           CONTINUE
 
              AUP=IDENU-HAMUP
@@ -187,24 +201,42 @@ C*****====================================================================*****
              DO 141 J=1,NLU
              DO 141 I=1,NR
                 MAINDIAGD((J-1)*NR+I)=ZERO
-                OFFDIAGD((J-1)*NR+I)=ZERO
 141           CONTINUE
 
+           NH = (NLD+1)/2
              DO 142 J=1,NLD
-             DO 142 I=1,NR
-                MAINDIAGD((J-1)*NR+I)= INVD + POTD(I)
-                OFFDIAGD((J-1)*NR+I) =(-0.5D0)*INVD
-142           CONTINUE
+             L=J-NH
+
+                DO 1421 I=1,NR
+1421               MAINDIAGD((J-1)*NR+I) = 
+     &                       (1.D0/DR**2+L**2*0.5D0)*DEXP(-2.D0*R(I))
+     &                          + POTD(I) 
+
+                   MAINDIAGD((J-1)*NR+1) = MAINDIAGD((J-1)*NR+1)
+     &                               - (0.5D0/DR**2)*DEXP(-2.D0*R(1))
+     &                                 * DEXP(-ABS(L)*(R(1)-R0))
+
+142  CONTINUE
+
+             DO 1423 J=1,NLD
+               OFFDIAGD((J-1)*NR+NR)= ZERO
+
+                 DO 1424 I=1,NR-1
+1424                OFFDIAGD((J-1)*NR+I) = -(0.5D0/DR**2)
+     &                                    *DEXP(-R(I)-R(I+1))
+
+1423  CONTINUE
+
 C*****====================================================================*****
-C***  COMPILING THE HAMILTONIAN ACCORDING TO CRANK-NICHOLSON                ***
+C***  COMPILING THE HAMILTONIAN ACCORDING TO CRANK-NICOLSON                 ***
 C***     (1+iH*t*0.5)PSI(n+1) = (1-iH*t*0.5)PSI(n)                          ***
 C*****====================================================================*****
              DO 143 I=1,MDN
-                HAMDN(I,I) = MAINDIAGD(I)*IONE*0.5D0*T(STEP)
+                HAMDN(I,I) = MAINDIAGD(I)*IONE*0.5D0*DT
 143           CONTINUE
 
              DO 144 I=1,MDN-1
-                HAMDN(I,I+1) = OFFDIAGD(I)*IONE*0.5D0*T(STEP)
+                HAMDN(I,I+1) = OFFDIAGD(I)*IONE*0.5D0*DT
 144           CONTINUE
 
              ADN=IDEND-HAMDN

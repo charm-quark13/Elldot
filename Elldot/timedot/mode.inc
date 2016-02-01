@@ -1,12 +1,11 @@
-      INTEGER REST,RST,XC,NU,ND,NOCCU,NOCCD,NLU,NLD,NT
+      INTEGER REST,RST,XC,NU,ND,NOCCU,NOCCD,NLU,NLD
       DOUBLE PRECISION RESID_0,REF,CRITERION,MIX
 C***********************************************************************
       PARAMETER(REST=0, XC=0, RST=0,
      &          RESID_0=1.D-06, REF=5.0, CRITERION=1.D-9, MIX=0.50,
      &          NU =  3, ND =  3,
      &          NOCCU = 3, NOCCD = 3,
-     &          NLU = 3, NLD = 3,
-     &          NT = 200)
+     &          NLU = 3, NLD = 3)
 C      PARAMETER(REST=0, XC=0, RST=0,
 C     &          RESID_0=1.D-09, REF=5.0, CRITERION=1.D-8, MIX=0.40,
 C     &          NU =  20, ND =  20,
