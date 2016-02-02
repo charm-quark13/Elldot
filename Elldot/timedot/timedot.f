@@ -7,7 +7,7 @@
       INCLUDE 'mode.inc'
 
       DOUBLE PRECISION TOL,R0,HA0,BB,MUBOHR,G,OMEGA,E(6,2)
-      INTEGER I,J,K,N,STEP,MUP,MDN,NUDIM,NDDIM,INFO
+      INTEGER I,J,K,N,STEP,MUP,MDN,NUDIM,NDDIM,INFO,NH,L
       
       PARAMETER (NUDIM =MAX(NU,1), NDDIM=MAX(ND,1))
       PARAMETER (MUP=NR*NLU, MDN=NR*NLD)
@@ -49,9 +49,9 @@ C        C0 READ IN (DEFINES INITIAL SHAPE OF WELL)
 C        2ND TERM IN C DEFINES THE OSCILLATION OF WELL IN TIME
 C*****===================================================================*****
 
-             C = C0+A*DSIN(wC*(T + DT/2))
-C             C = C0
-              write(*,*) T, C
+C             C = C0+A*DSIN(wC*(T + DT/2))
+             C = C0
+C              write(*,*) T, C
 C*****===================================================================*****
 C     SETTING THE VALUE OF R ACCORDING TO LOG GRID
 C*****===================================================================*****
@@ -103,14 +103,14 @@ C*****====================================================================*****
              L=J-NH
 
                 DO 421 I=1,NR
-421                MAINDIAGU((J-1)*NR+I) = 
+                   MAINDIAGU((J-1)*NR+I) = 
      &                         (1.D0/DR**2+L**2*0.5D0)*DEXP(-2.D0*R(I))
      &                           + POTU(I) 
 
                    MAINDIAGU((J-1)*NR+1) = MAINDIAGU((J-1)*NR+1)
      &                           - (0.5D0/DR**2)*DEXP(-2.D0*R(1))
      &                           * DEXP(-ABS(L)*(R(1)-R0))
-
+421             continue
 42           CONTINUE
 
              DO 422 J=1,NLU
@@ -118,8 +118,9 @@ C*****====================================================================*****
                OFFDIAGU((J-1)*NR+NR)= ZERO
             
                  DO 423 I=1,NR-1
-423                 OFFDIAGU((J-1)*NR+I) = -(0.5D0/DR**2)
+                    OFFDIAGU((J-1)*NR+I) = -(0.5D0/DR**2)
      &                                   *DEXP(-R(I)-R(I+1))
+423              continue
 422          CONTINUE
 
 C*****====================================================================*****
@@ -208,7 +209,7 @@ C*****====================================================================*****
              L=J-NH
 
                 DO 1421 I=1,NR
-1421               MAINDIAGD((J-1)*NR+I) = 
+                   MAINDIAGD((J-1)*NR+I) = 
      &                       (1.D0/DR**2+L**2*0.5D0)*DEXP(-2.D0*R(I))
      &                          + POTD(I) 
 
@@ -216,16 +217,18 @@ C*****====================================================================*****
      &                               - (0.5D0/DR**2)*DEXP(-2.D0*R(1))
      &                                 * DEXP(-ABS(L)*(R(1)-R0))
 
-142  CONTINUE
+1421            continue
+142          CONTINUE
 
              DO 1423 J=1,NLD
                OFFDIAGD((J-1)*NR+NR)= ZERO
 
                  DO 1424 I=1,NR-1
-1424                OFFDIAGD((J-1)*NR+I) = -(0.5D0/DR**2)
+                    OFFDIAGD((J-1)*NR+I) = -(0.5D0/DR**2)
      &                                    *DEXP(-R(I)-R(I+1))
 
-1423  CONTINUE
+1424         continue
+1423         CONTINUE
 
 C*****====================================================================*****
 C***  COMPILING THE HAMILTONIAN ACCORDING TO CRANK-NICOLSON                 ***
