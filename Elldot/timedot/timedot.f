@@ -25,7 +25,7 @@
      &               NDX(MDN,MDN),NUX(MUP,MUP),
      &               UXTC(MUP,NUDIM),DXTC(MDN,NDDIM)
 
-      DOUBLE PRECISION T,R(NR),RR(NR),POTU(MUP),POTD(MDN),
+      DOUBLE PRECISION T,R(NR),RR(NR),POTU(NR),POTD(NR),
      &               RHO(NR,3),RHOUP(NR,3),RHODOWN(NR,3),ZETA(NR,3)
       DOUBLE PRECISION C,UXSUM,DXSUM,wC,
      &                 NORMU,NORMD,Y(NR),REXP
@@ -42,7 +42,7 @@ C**** BEGINNING OF THE TIME ITERATION LOOP                                ****
 C*****===================================================================*****
 
       DO 13 STEP=1,NT
-         T = T + DT
+         T = T+DT
 C*****===================================================================*****
 C     SETTING UP PARABOLIC WELL [ f(r)=0.5*C*r**2 ]
 C        C0 READ IN (DEFINES INITIAL SHAPE OF WELL) 
@@ -60,6 +60,8 @@ C*****===================================================================*****
                 R(I) = (DBLE(I)-N0)*DR
 10           CONTINUE
       
+             R0 = R(1)-DR
+
              DO 11 I=1,NR
                 RR(I) = DEXP(R(I))
 11           CONTINUE
@@ -73,17 +75,13 @@ C*****--------------------------------------------------------------------*****
 C*****====================================================================*****
 C***  GENERATING IDENTITY MATRIX                                            ***
 C*****====================================================================*****
-             DO 30 I=1,MUP
-                IDIAGU(I)=ONE
-30           CONTINUE
-
              DO 31 I=1,MUP
              DO 31 K=1,MUP
                 IDENU(I,K)=ZERO
 31           CONTINUE
 
              DO 32 I=1,MUP
-                IDENU(I,I) = IDIAGU(I)
+                IDENU(I,I) = ONE
 32           CONTINUE
 C*****====================================================================*****
 C     SETTING UP HAMILTONIAN                                                 **
@@ -107,10 +105,12 @@ C*****====================================================================*****
      &                         (1.D0/DR**2+L**2*0.5D0)*DEXP(-2.D0*R(I))
      &                           + POTU(I) 
 
+421             CONTINUE
+                  
                    MAINDIAGU((J-1)*NR+1) = MAINDIAGU((J-1)*NR+1)
      &                           - (0.5D0/DR**2)*DEXP(-2.D0*R(1))
      &                           * DEXP(-ABS(L)*(R(1)-R0))
-421             continue
+
 42           CONTINUE
 
              DO 422 J=1,NLU
@@ -125,7 +125,7 @@ C*****====================================================================*****
 
 C*****====================================================================*****
 C***  COMPILING THE HAMILTONIAN ACCORDING TO CRANK-NICOLSON                 ***
-C***     (1+iH*t*0.5)PSI(n+1) = (1-iH*t*0.5)PSI(n)                          ***
+C***     (1+iH*dt*0.5)PSI(n+1) = (1-iH*dt*0.5)PSI(n)                          ***
 C*****====================================================================*****
 
              DO 43 I=1,MUP
@@ -135,6 +135,20 @@ C*****====================================================================*****
              DO 44 I=1,MUP-1
                 HAMUP(I,I+1) = OFFDIAGU(I)*IONE*0.5D0*DT
 44           CONTINUE
+
+             do i=1,mup
+                   write(98,*) dble(offdiagu(i))
+                   write(99,*) dimag(offdiagu(i))
+                   write(998,*) dble(hamup(i,i+1))
+                   write(999,*) dimag(hamup(i,i+1))
+             enddo
+
+             REWIND 998
+             REWIND 999
+
+             if (step.eq.2) then
+                 stop
+             endif
 
              AUP=IDENU-HAMUP
 
@@ -162,7 +176,7 @@ C*****====================================================================*****
 
 C            UXT is your right-hand side
 C*****====================================================================*****
-C***   SETTING UP THE LHS OF THE CRANK-NICHOLSON ALGORITHM                  ***
+C***   SETTING UP THE LHS OF THE CRANK-NICOLSON ALGORITHM                  ***
 C*****====================================================================*****
              AUP = IDENU+HAMUP             
 C*****====================================================================*****
@@ -179,17 +193,13 @@ C                                                                             *
 C*****====================================================================*****
 C***  GENERATING IDENTITY MATRIX                                            ***
 C*****====================================================================*****
-             DO 130 I=1,MDN
-                IDIAGD(I)=ONE
-130           CONTINUE
-
              DO 131 I=1,MDN
              DO 131 K=1,MDN
                 IDEND(I,K)=ZERO
 131           CONTINUE
 
              DO 132 I=1,MDN
-                IDEND(I,I) = IDIAGD(I)
+                IDEND(I,I) = ONE
 132           CONTINUE
 C*****====================================================================*****
 C     SETTING UP HAMILTONIAN                                                 **
@@ -212,12 +222,12 @@ C*****====================================================================*****
                    MAINDIAGD((J-1)*NR+I) = 
      &                       (1.D0/DR**2+L**2*0.5D0)*DEXP(-2.D0*R(I))
      &                          + POTD(I) 
+1421            CONTINUE
 
                    MAINDIAGD((J-1)*NR+1) = MAINDIAGD((J-1)*NR+1)
      &                               - (0.5D0/DR**2)*DEXP(-2.D0*R(1))
      &                                 * DEXP(-ABS(L)*(R(1)-R0))
 
-1421            continue
 142          CONTINUE
 
              DO 1423 J=1,NLD
@@ -232,7 +242,7 @@ C*****====================================================================*****
 
 C*****====================================================================*****
 C***  COMPILING THE HAMILTONIAN ACCORDING TO CRANK-NICOLSON                 ***
-C***     (1+iH*t*0.5)PSI(n+1) = (1-iH*t*0.5)PSI(n)                          ***
+C***     (1+iH*dt*0.5)PSI(n+1) = (1-iH*dt*0.5)PSI(n)                          ***
 C*****====================================================================*****
              DO 143 I=1,MDN
                 HAMDN(I,I) = MAINDIAGD(I)*IONE*0.5D0*DT
@@ -265,7 +275,7 @@ C*****====================================================================*****
 
              DXT=MATMUL(ADN,DX)
 C*****====================================================================*****
-C***   SETTING UP THE LHS OF THE CRANK-NICHOLSON ALGORITHM                  ***
+C***   SETTING UP THE LHS OF THE CRANK-NICOLSON ALGORITHM                  ***
 C*****====================================================================*****
              ADN = IDEND+HAMDN
 C*****====================================================================*****
@@ -351,71 +361,88 @@ C*****=============================================================*****
       PARAMETER(IONE=(0.D0,1.D0),ONE=(1.D0,0.D0),ZERO=(0.D0,0.D0))
 
 
-      DO 10 J=1,3
-      DO 10 I=1,NR
-         RHOUP(I,J)=0.D0
-         RHODOWN(I,J)=0.D0
-10       ZETA(I,J)=0.D0
+      DO J=1,3
+          DO  I=1,NR
+              RHOUP(I,J)=0.D0
+              RHODOWN(I,J)=0.D0
+              ZETA(I,J)=0.D0
+          enddo
+      enddo
 
-      DO 2 J=NU,NU-NOCCU+1,-1
+      DO J=NU,NU-NOCCU+1,-1
 
-         DO 20 I=1,NLU
-         DO 20 K=1,NR
-20          RHOUP(K,1) = RHOUP(K,1) +
+         DO I=1,NLU
+            DO K=1,NR
+               RHOUP(K,1) = RHOUP(K,1) +
+     &                  CDABS(UX((I-1)*NR+K,J))**2/RR(K)**2
+            enddo
+         enddo
+
+         DO I=1,NLU
+            DO L=1,NLU
+               IF ((I-L).EQ.2) THEN
+                  DO K=1,NR
+                     RHOUP(K,2) = RHOUP(K,2) +
      &               CDABS(UX((I-1)*NR+K,J))**2/RR(K)**2
+                  enddo
+               ENDIF
+            enddo
+         enddo
 
-         DO 21 I=1,NLU
-         DO 21 L=1,NLU
-            IF ((I-L).EQ.2) THEN
-               DO 22 K=1,NR
-22                RHOUP(K,2) = RHOUP(K,2) +
-     &            CDABS(UX((I-1)*NR+K,J))**2/RR(K)**2
-            ENDIF
-21       CONTINUE
+         DO I=1,NLU
+            DO L=1,NLU
+               IF ((I-L).EQ.4) THEN
+                  DO K=1,NR
+24                   RHOUP(K,3) = RHOUP(K,3) +
+     &               CDABS(UX((I-1)*NR+K,J))**2/RR(K)**2
+                  enddo
+               ENDIF
+            enddo
+         enddo
 
-         DO 23 I=1,NLU
-         DO 23 L=1,NLU
-            IF ((I-L).EQ.4) THEN
-               DO 24 K=1,NR
-24                RHOUP(K,3) = RHOUP(K,3) +
-     &            CDABS(UX((I-1)*NR+K,J))**2/RR(K)**2
-            ENDIF
-23       CONTINUE
+      ENDDO
 
-2     CONTINUE
+      DO J=ND,ND-NOCCD+1,-1
 
-      DO 3 J=ND,ND-NOCCD+1,-1
+         DO I=1,NLD
+            DO K=1,NR
+               RHODOWN(K,1) = RHODOWN(K,1) +
+     &                 CDABS(DX((I-1)*NR+K,J))**2/RR(K)**2
+            enddo
+         enddo     
 
-         DO 30 I=1,NLD
-         DO 30 K=1,NR
-30          RHODOWN(K,1) = RHODOWN(K,1) +
-     &               CDABS(DX((I-1)*NR+K,J))**2/RR(K)**2
+         DO I=1,NLD
+            DO L=1,NLD
+               IF ((I-L).EQ.2) THEN
+                  DO K=1,NR
+                     RHODOWN(K,2) = RHODOWN(K,2) +
+     &               CDABS(DX((I-1)*NR+K,J))**2/RR(K)**2 
+                  enddo
+               ENDIF
+            enddo
+         enddo
 
-         DO 31 I=1,NLD
-         DO 31 L=1,NLD
-            IF ((I-L).EQ.2) THEN
-               DO 32 K=1,NR
-32                RHODOWN(K,2) = RHODOWN(K,2) +
-     &            CDABS(DX((I-1)*NR+K,J))**2/RR(K)**2 
-            ENDIF
-31       CONTINUE
+         DO I=1,NLD
+            DO L=1,NLD
+               IF ((I-L).EQ.4) THEN
+                  DO K=1,NR
+                     RHODOWN(K,3) = RHODOWN(K,3) +
+     &               CDABS(DX((I-1)*NR+K,J))**2/RR(K)**2 
+                  enddo
+               ENDIF
+            enddo
+         enddo
 
-         DO 33 I=1,NLD
-         DO 33 L=1,NLD
-            IF ((I-L).EQ.4) THEN
-               DO 34 K=1,NR
-34                RHODOWN(K,3) = RHODOWN(K,3) +
-     &            CDABS(DX((I-1)*NR+K,J))**2/RR(K)**2 
-            ENDIF
-33       CONTINUE
+      ENDDO
 
-3     CONTINUE
+      DO J=1,3
+         DO I=1,NR
+            RHO(I,J) = RHOUP(I,J) + RHODOWN(I,J)
+            ZETA(I,J)= (RHOUP(I,J) - RHODOWN(I,J))/RHO(I,J)
+         enddo
 
-      DO 50 J=1,3
-      DO 50 I=1,NR
-         RHO(I,J) = RHOUP(I,J) + RHODOWN(I,J)
-50       ZETA(I,J)= (RHOUP(I,J) - RHODOWN(I,J))/RHO(I,J)
-
+      ENDDO
+  
       RETURN
       END
 
