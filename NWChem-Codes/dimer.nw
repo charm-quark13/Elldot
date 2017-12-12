@@ -1,0 +1,47 @@
+title "Dimer canonical geometry"
+echo
+
+geometry print xyz
+ C                    -1.        0.       -0.6695
+ C                    -1.        0.        0.6695
+ H                    -1.       -0.85446  -1.23422
+ H                    -1.        0.85446  -1.23422
+ H                    -1.       -0.85446   1.23422
+ H                    -1.        0.85446   1.23422
+ C                     3.        0.        0.6555
+ C                     3.        0.       -0.6555
+ F                     3.        1.0961    1.3893
+ F                     3.       -1.0961    1.3893
+ F                     3.       -1.0961   -1.3893
+ F                     3.        1.0961   -1.3893
+end
+
+driver
+  xyz geo-dimer
+end 
+basis
+  * library 6-31g*
+end
+
+scf
+  rhf
+  vectors
+end
+
+#dplot
+#  title H2O Localization
+#  vectors dimer-local.movecs
+#  LimitXYZ
+#  -3.0 4.0 100
+#  -3.0 4.0 100
+#  -3.0 4.0 100
+#  gaussian
+#  orbitals view
+#    1
+#    %d  
+#  output mo-%d.cube
+#end
+
+task scf
+#task dplot
+
