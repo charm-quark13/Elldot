@@ -1,0 +1,242 @@
+\documentclass[10pt]{revtex4-1}
+
+\usepackage{graphicx,bm,color}
+\usepackage{epsfig}
+%\usepackage{cite}
+\usepackage{url}
+%\usepackage[font={small,it},labelfont={bf,up}]{caption}
+\usepackage{lipsum}
+\usepackage{braket}
+\usepackage{amsmath,amsfonts}
+%\usepackage{natbib}
+\usepackage{wrapfig}
+
+\newcommand{\bfr}{{\bf r}}
+\newcommand{\bfx}{{\bf x}}
+\newcommand{\ud}{{\uparrow\downarrow}}
+\newcommand{\du}{{\downarrow\uparrow}}
+\newcommand{\uu}{{\uparrow\uparrow}}
+\newcommand{\dd}{{\downarrow \downarrow}}
+\newcommand{\ua}{\uparrow}
+\newcommand{\da}{\downarrow}
+\newcommand{\bfX}{{\bf X}}
+\newcommand{\bfY}{{\bf Y}}
+\newcommand{\bfA}{{\bf A}}
+\newcommand{\bfB}{{\bf B}}
+\newcommand{\bfm}{{\bf m}}
+\newcommand{\bfk}{{\bf k}}
+\newcommand{\bfq}{{\bf q}}
+\newcommand{\bfG}{{\bf G}}
+\newcommand{\Change}{\color{blue}}
+
+\begin{document}
+
+\title{Non-interacting electrons on two-site lattice}
+
+\section{Potential matrix}
+
+From Kohn-Sham equations, we can write the Kohn-Sham potential matrix as the following equation.
+
+\begin{equation}
+  \underline{\underline{v}}^{\text{KS}}(\bfr) = \sum^3_{j=0} \sigma_j V_j^{\text{KS}}(\bfr)
+\end{equation}
+
+Defining $V_j^{\text{KS}}$ as a vector made up of the potentials in the system, $B_x$, $B_y$, and $B_z$, we can find the $\underline{\underline{v}}^{\text{KS}}_j$ by carrying out our multiplication of the Pauli matrices on $V_j^{\text{KS}}$.
+
+\begin{equation*}
+  \underline{\underline{v}}^{\text{KS}}(\bfr) = \sigma_0 V_0^{\text{KS}} + \sigma_1 V_1^{\text{KS}} + \sigma_2 V_2^{\text{KS}} + \sigma_3 V_3^{\text{KS}}
+\end{equation*}
+\begin{equation*}
+  \underline{\underline{v}}^{\text{KS}}(\bfr) =
+  \begin{pmatrix}
+    1 & 0 \\
+    0 & 1 \\
+  \end{pmatrix}
+  V_0^{\text{KS}} +
+  \begin{pmatrix}
+    0 & 1 \\
+    1 & 0 \\
+  \end{pmatrix}
+  V_1^{\text{KS}} +
+  \begin{pmatrix}
+    0 & -i \\
+    i & 0 \\
+  \end{pmatrix}
+  V_2^{\text{KS}} +
+  \begin{pmatrix}
+    1 & 0 \\
+    0 & -1 \\
+  \end{pmatrix}
+  V_3^{\text{KS}}
+\end{equation*}
+
+Then we combine them altogether, replacing our $V_j$ potentials with the actual potentials.
+
+\begin{equation*}
+  \underline{\underline{v}}^{\text{KS}}(\bfr) =
+  \begin{pmatrix}
+    V + B_z & B_x - iB_y \\
+    B_x + iB_y & V - B_z \\
+  \end{pmatrix}
+\end{equation*}
+
+Now, we need to determine the derivatives of our wavefunctions with respect to $V_j$.
+
+\begin{equation}
+   \ket{\delta \phi_n} = \sum_{k \neq j} \frac{\bra{\phi_k} \delta V \ket{\phi_n}}{E_n^{(0)}-E_k^{(0)}} \ket{\phi_k}
+\end{equation}
+
+Using our spinor notation, we can reorganize our equation to get our perturbation equation with equation.
+
+\begin{equation*}
+  \begin{pmatrix}
+    \delta \phi_{i \ua} \\
+    \delta \phi_{i \da} \\
+  \end{pmatrix}
+  = \sum_n \sum_{j \neq i} \frac{
+  \begin{pmatrix}
+    \phi_{j \ua}^* & \phi_{j \da}^* \\
+  \end{pmatrix}
+  \underline{\underline{v}}^{\text{KS}}
+  \begin{pmatrix}
+    \phi_{i \ua} \\
+    \phi_{i \da} \\
+  \end{pmatrix}}
+  {E_i - E_j}
+  \begin{pmatrix}
+    \phi_{j \ua} \\
+    \phi_{j \da} \\
+  \end{pmatrix}
+\end{equation*}
+
+\begin{equation}
+  \begin{pmatrix}
+    \delta \phi_{i \ua} \\
+    \delta \phi_{i \da} \\
+  \end{pmatrix}
+  = \sum_n \sum_{j \neq i} \frac{
+  \begin{pmatrix}
+    \phi_{j \ua}^* & \phi_{j \da}^* \\
+  \end{pmatrix}
+  \begin{pmatrix}
+    V + B_z & B_x - iB_y \\
+    B_x + iB_y & V - B_z \\
+  \end{pmatrix}
+  \begin{pmatrix}
+    \phi_{i \ua} \\
+    \phi_{i \da} \\
+  \end{pmatrix}}
+  {E_i - E_j}
+  \begin{pmatrix}
+    \phi_{j \ua} \\
+    \phi_{j \da} \\
+  \end{pmatrix}
+\end{equation}
+Multiplying this matrix equation out, we can explicitly define the variables we are deriving with respect to.
+\begin{equation}
+  \begin{pmatrix}
+    \delta \phi_{i \ua} \\
+    \delta \phi_{i \da} \\
+  \end{pmatrix}
+  = \sum_{j \neq i} \bigg{\{ } \Big{(}[V_0 + V_3]\phi_{i \ua} + [V_1 + i V_2]\phi_{i \da}\Big{)}\phi_{j \ua} + \Big{(}[V_1 + i V_2]\phi_{i \ua} + [V_0 - i V_3]\phi_{i \da}\Big{)}\phi_{j \da} \bigg{\} }
+  \begin{pmatrix}
+    \phi_{j \ua} \\
+    \phi_{j \da} \\
+  \end{pmatrix}
+\end{equation}
+Having $\delta \phi$, we can now look at how we can formulate our density functional derivative.
+We need $\frac{\delta n}{\delta v_j}$, where $\delta v_j$ is the derivative with respect to the \textit{j}-th potential as defined by the descretization of the system.
+That means we have a j-length gradient of our density, with the differential density of each step being found as:
+
+\begin{equation}
+  \frac{\delta n_i}{\delta v_j} = \frac{\delta \Psi_i}{\delta v_j} \Psi_i^{\dagger} + \Psi_i \frac{\delta \Psi_i^{\dagger}}{\delta v_j}
+\end{equation}
+
+This leads to the differential density matrix $\delta n$.
+\begin{equation}
+  \delta n =
+  \begin{pmatrix}
+    \delta \psi_{\ua} \psi_{\ua}^* + \psi_{\ua} \delta \psi_{\ua}^* &
+    \delta \psi_{\ua} \psi_{\da}^* + \psi_{\ua} \delta \psi_{\da}^* \\
+    \delta \psi_{\da} \psi_{\ua}^* + \psi_{\da} \delta \psi_{\ua}^* &
+    \delta \psi_{\da} \psi_{\da}^* + \psi_{\da} \delta \psi_{\da}^*
+  \end{pmatrix}
+\end{equation}
+
+Having established the potentials and the derivative method, we can formulate the 'density' vector that we will be calculating. Each potential has a 1-to-1 correspondence with with the various density and magnetization quantities.
+
+\begin{equation}
+  \begin{pmatrix}
+    n_a \\
+    n_b \\
+    m_{xa} \\
+    m_{xb} \\
+    m_{ya} \\
+    m_{yb} \\
+    m_{za} \\
+    m_{zb} \\
+  \end{pmatrix}
+  \longleftrightarrow
+  \begin{pmatrix}
+    V_a \\
+    V_b \\
+    B_{xa} \\
+    B_{xb} \\
+    B_{ya} \\
+    B_{yb} \\
+    B_{za} \\
+    B_{zb} \\
+  \end{pmatrix}
+\end{equation}
+
+We can define $n_a$ and $n_b$ from the spin density matrix that are generated as a function of the spinor wavefunctions. Explicitly, we can define the spin-density matrix below.
+\begin{eqnarray*}
+  \underline{\underline{n}}(\bfr) &=& \sum_i^N \Psi_i(\bfr) \Psi_i^{\dagger}(\bfr) \\
+  &\equiv&
+  \begin{pmatrix}
+    n_{\ua \ua}(\bfr) & n_{\ua \da}(\bfr) \\
+    n_{\da \ua}(\bfr) & n_{\da \da}(\bfr) \\
+  \end{pmatrix}
+\end{eqnarray*}
+
+Having defined our spin-density array, we can calculate the total density $n(\bfr) \equiv m_0(\bfr)$ where we can define the magnetization vector by using the spin-density matrix and the Pauli matrices.
+\begin{equation}
+  m_i(\bfr) = \text{Tr}\{\sigma_i \underline{\underline{n}}(\bfr)\}
+\end{equation}
+Here, $i$ runs over the $x$, $y$, and $z$ components, respectively.
+The relationship then allows us to calculate the magnetization from spin-density matrix calculated from our Hamiltonian.
+\begin{equation}
+  \vec{m}(\bfr) =
+  \begin{pmatrix}
+    m_0(\bfr) \\
+    m_1(\bfr) \\
+    m_2(\bfr) \\
+    m_3(\bfr) \\
+  \end{pmatrix}
+  =
+  \begin{pmatrix}
+    n_{\ua \ua}(\bfr) + n_{\da \da}(\bfr) \\
+    n_{\ua \da}(\bfr) + n_{\da \ua}(\bfr) \\
+    i(n_{\ua \da}(\bfr) - n_{\da \ua}(\bfr)) \\
+    n_{\ua \ua}(\bfr) - n_{\da \da}(\bfr) \\
+  \end{pmatrix}
+\end{equation}
+
+This means we now have a prescription to calculate the derivative with respect to $\delta v_j$ for all measurable values.
+\begin{equation}
+  \delta \vec{m}(\bfr) =
+  \begin{pmatrix}
+    (\delta \psi_{\ua} \psi_{\ua}^* + \psi_{\ua} \delta \psi_{\ua}^*) + (\delta \psi_{\da} \psi_{\da}^* + \psi_{\da} \delta \psi_{\da}^*) \\
+    (\delta \psi_{\ua} \psi_{\da}^* + \psi_{\ua} \delta \psi_{\da}^*) + (\delta \psi_{\da} \psi_{\ua}^* + \psi_{\da} \delta \psi_{\ua}^*) \\
+    i((\delta \psi_{\ua} \psi_{\da}^* + \psi_{\ua} \delta \psi_{\da}^*) - (\delta \psi_{\da} \psi_{\ua}^* + \psi_{\da} \delta \psi_{\ua}^*) \\
+    (\delta \psi_{\ua} \psi_{\ua}^* + \psi_{\ua} \delta \psi_{\ua}^*) - (\delta \psi_{\da} \psi_{\da}^* + \psi_{\da} \delta \psi_{\da}^*) \\
+  \end{pmatrix}
+\end{equation}
+
+% ================== Bibliography =======================
+%\bibliography{working-bib-corrected}
+%\bibliographystyle{apsrev4-1}
+%========================================================
+
+
+\end{document}
