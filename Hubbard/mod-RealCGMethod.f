@@ -32,7 +32,9 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
         v(i) = 0.d0
       end do
 
-C  Recalculating the eigenvectors through the Schrodiner Eqn.
+      write(*,vector) v
+
+C  Recalculating the eigenvectors through the Schrodinger Eqn.
       call hbuild(v,hmat)
 
       !write(*,*) 'En             '
@@ -64,7 +66,7 @@ C  Calculating the difference integral between the target and current densities.
         integral = integral + (dens(i)-ntarget(i))**2
       end do
 
-      !write(*,*) integral
+!      write(*,*) integral
 
       end function
 *************************************************************************
@@ -355,7 +357,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
             end do
           end do
 
-          n0(i+(m)*2) = x
+          n0(i+m*2) = x
 
         end do
 
@@ -412,7 +414,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       integer, parameter :: lwork=136
       integer :: i,j,jj,info
 
-      real(8) :: v(dim*sites), mat(dim,dim), wn(dim), dum, x
+      real(8) :: v(dim*2), mat(dim,dim), wn(dim), dum, x
       real(8) :: work(lwork),vr(dim,dim),vl(dim,dim),test(sites,sites)
 
 C  Setting up noninteracting Hubbard-like system Hamiltonian with t as the
@@ -420,7 +422,7 @@ C  hopping constant between lattice sites.
       do i=1,sites
         do j=1,sites
           if (i.eq.j) Then
-            test(i,j) = v(i) + v((dim-1)*sites + i)
+            test(i,j) = v(i) + v((dim-1)*2 + i)
           elseif (abs(i-j).eq.1) Then
             test(i,j) = -t
           else
@@ -440,7 +442,7 @@ C  hopping constant between lattice sites.
       do i=1,sites
         do j=1,sites
           if (i.eq.j) Then
-            test(i,j) = v(i) - v((dim-1)*sites + i)
+            test(i,j) = v(i) - v((dim-1)*2 + i)
           elseif (abs(i-j).eq.1) Then
             test(i,j) = -t
           else
@@ -467,6 +469,9 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 
 !      write(*,matrix) mat
 !      write(*,*)'***********************'
+
+      write(*,*) '****************************'
+      write(*,matrix) mat
 
       call dgeev('n','v',dim,mat,dim,En,wn,VL,dim,VR,dim
      &                                   ,WORK,LWORK,INFO)
@@ -619,7 +624,7 @@ CU    USES brent,f1dim,mnbrak
         ax=0.d0
         xx=1.d0
         call mnbrak(ax,xx,bx,fa,fx,fb,f1dim)
-        fret=brent(ax,xx,bx,f1dim,TOL,xmin)
+        fret=dbrent(ax,xx,bx,f1dim,df1dim,TOL,xmin)
         do 12 j=1,n
           xi(j)=xmin*xi(j)
           p(j)=p(j)+xi(j)
@@ -627,6 +632,142 @@ CU    USES brent,f1dim,mnbrak
         return
         END subroutine
 C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
+
+*************************************************************************
+      FUNCTION dbrent(ax,bx,cx,f,df,tol,xmin)
+      INTEGER ITMAX
+      REAL(8) dbrent,ax,bx,cx,tol,xmin,df,f,ZEPS
+      EXTERNAL df,f
+      PARAMETER (ITMAX=100,ZEPS=1.0d-10)
+      INTEGER iter
+      REAL(8) a,b,d,d1,d2,du,dv,dw,dx,e
+      REAL(8) fu,fv,fw,fx,olde,tol1,tol2,u,u1,u2,v,w,x,xm
+      LOGICAL ok1,ok2
+      a=min(ax,cx)
+      b=max(ax,cx)
+      v=bx
+      w=v
+      x=v
+      e=0.d0
+      fx=f(x)
+      fv=fx
+      fw=fx
+      dx=df(x)
+      dv=dx
+      dw=dx
+      do 11 iter=1,ITMAX
+        xm=0.5d0*(a+b)
+        tol1=tol*abs(x)+ZEPS
+        tol2=2.d0*tol1
+        if(abs(x-xm).le.(tol2-.5d0*(b-a))) goto 3
+        if(abs(e).gt.tol1) then
+          d1=2.d0*(b-a)
+          d2=d1
+          if(dw.ne.dx) d1=(w-x)*dx/(dx-dw)
+          if(dv.ne.dx) d2=(v-x)*dx/(dx-dv)
+          u1=x+d1
+          u2=x+d2
+          ok1=((a-u1)*(u1-b).gt.0.d0).and.(dx*d1.le.0.d0)
+          ok2=((a-u2)*(u2-b).gt.0.d0).and.(dx*d2.le.0.d0)
+          olde=e
+          e=d
+          if(.not.(ok1.or.ok2))then
+            goto 1
+          else if (ok1.and.ok2)then
+            if(abs(d1).lt.abs(d2))then
+              d=d1
+            else
+              d=d2
+            endif
+          else if (ok1)then
+            d=d1
+          else
+            d=d2
+          endif
+          if(abs(d).gt.abs(0.5d0*olde))goto 1
+          u=x+d
+          if(u-a.lt.tol2 .or. b-u.lt.tol2) d=sign(tol1,xm-x)
+          goto 2
+        endif
+1       if(dx.ge.0.d0) then
+          e=a-x
+        else
+          e=b-x
+        endif
+        d=0.5d0*e
+2       if(abs(d).ge.tol1) then
+          u=x+d
+          fu=f(u)
+        else
+          u=x+sign(tol1,d)
+          fu=f(u)
+          if(fu.gt.fx)goto 3
+        endif
+        du=df(u)
+        if(fu.le.fx) then
+          if(u.ge.x) then
+            a=x
+          else
+            b=x
+          endif
+          v=w
+          fv=fw
+          dv=dw
+          w=x
+          fw=fx
+          dw=dx
+          x=u
+          fx=fu
+          dx=du
+        else
+          if(u.lt.x) then
+            a=u
+          else
+            b=u
+          endif
+          if(fu.le.fw .or. w.eq.x) then
+            v=w
+            fv=fw
+            dv=dw
+            w=u
+            fw=fu
+            dw=du
+          else if(fu.le.fv .or. v.eq.x .or. v.eq.w) then
+            v=u
+            fv=fu
+            dv=du
+          endif
+        endif
+11    continue
+      pause 'dbrent exceeded maximum iterations'
+3     xmin=x
+      dbrent=fx
+      return
+      END
+C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
+
+
+*************************************************************************
+      FUNCTION df1dim(x)
+      INTEGER NMAX
+      REAL(8) df1dim,x
+      PARAMETER (NMAX=50)
+CU    USES dfunc
+      INTEGER j,ncom
+      REAL(8) df(NMAX),pcom(NMAX),xicom(NMAX),xt(NMAX)
+      COMMON /f1com/ pcom,xicom,ncom
+      do 11 j=1,ncom
+        xt(j)=pcom(j)+x*xicom(j)
+11    continue
+      call dfunc(xt,df)
+      df1dim=0.d0
+      do 12 j=1,ncom
+        df1dim=df1dim+df(j)*xicom(j)
+12    continue
+      return
+      END
+C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
+
 ****************************************************************************
 
         SUBROUTINE mnbrak(ax,bx,cx,fa,fb,fc,func)
