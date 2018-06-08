@@ -6,13 +6,13 @@ C  as portability of the code to future programs.
 
       integer :: i,iter, itol
 
-      real(8) :: ftol,fret
-      real (8) :: V(dim*2),h0(dim,dim),phi(spin,sites)
+      real(8) :: x,ftol,fret
+      real (8) :: V(dim*2),h0(dim,dim),phi(spin,sites),dSdV(dim*2)
       real(8) :: Bx(sites), By(sites), Bz(sites)
 !      character(len=20):: Pmat
       write(matrix,'(a, i3, a)') '(', dim, 'f13.7)'
-      write(matprint,'(a, i3, a)') '(', sites, 'es13.7)'
-      write(vector,'(a, i3, a)') '(', 1, 'es18.7)'
+      write(matprint,'(a, i3, a)') '(', sites, 'e16.6)'
+      write(vector,'(a, i3, a)') '(', 1, 'f13.8)'
 !      write(Pmat,'(a, i3, a)') '(', 8, 'f13.7)'
 
       call Pauli(sig)
@@ -42,6 +42,8 @@ C  as portability of the code to future programs.
         v(sites*3+i) = Bz(i)
       end do
 
+      dsdv = v
+
       write(*,vector) v
       write(*,*) 'V0', '^^^^^^^^^^^^^^'
 
@@ -52,7 +54,7 @@ C  as portability of the code to future programs.
 
       ntarget = 0.d0
 
-      phi = 0.d0
+!      phi = 0.d0
 
 ***************************************************************************
 ***   Creating the target spin-density vector which will be used in the
@@ -60,10 +62,12 @@ C  as portability of the code to future programs.
 ***************************************************************************
       call wfmatrix(phi,h0)
 
-!      write(*,matrix) transpose(h0)
-!      write(*,matprint) transpose(phi)
+***   h0 and phi are being created and positions assigned correctly (6/4/18 EP)
 
       call densvec(ntarget,phi)
+
+***   densvec and test matrix within densvec is being correctly calculated
+***   and values assigned to correct positions (6/4/18 EP)
 
 ***   Using normalized density to our advantage to reduce the dimensionality of
 ***   the problem. This allows us to pin Bz(b) to zero. We can do the same with
@@ -76,36 +80,38 @@ C  as portability of the code to future programs.
 
       write(*,vector) ntarget
 
+!      do iter = 1,100
+        x = -1.d0
+        do i=1,sites
+          v(1) = 0.d0
+          if (i.ne.1) then
+            v(i) = .5d0
+          end if
+        end do
 
-      do i=1,sites
-        v(1) = 0.d0
-        if (i.ne.1) then
-          v(i) = -.75d0
-        end if
-      end do
+        Bx = 0.d0
+        By = 0.d0
+        Bz(1) = 1.d0
+        Bz(2) = -x
 
-      Bx = 0.d0
-      By = 0.d0
-      Bz(1) = .3d0
-      Bz(2) = .25d0
-
-      do i=1,sites
-        v(sites+i) = Bx(i)
-        v(sites*2+i) = By(i)
-        v(sites*3+i) = Bz(i)
-      end do
-
-!      write(*,*) '                      '
-!      write(*,vector) En
-
-!      call hbuild(v,hmat)
-!      call wfmatrix(phi,hmat)
-!      call densvec(ntarget,phi)
-!      write(*,matrix) transpose(hmat)
-!      write(*,*)'*****************'
-!      write(*,matprint) transpose(phi)
-!      write(*,*) '*****************'
-!      write(*,vector) ntarget
+        do i=1,sites
+          v(sites+i) = Bx(i)
+          v(sites*2+i) = By(i)
+          v(sites*3+i) = Bz(i)
+        end do
+!
+!        ftol = func(v)
+!
+!        write(*,*) '************'
+!        write(*,*) ftol
+!        write(*,*) '***',x,'***'
+!
+!        call dfunc(v,dSdV)
+!
+!        write(2,*) '***',x,'***'
+!        write(2,vector) dSdV
+!        write(2,*) '***********'
+!      end do
 
 ***************************************************************************
 ***   Calling Numerical Recipes' conjugate gradient method optimiztion
@@ -116,7 +122,14 @@ C  as portability of the code to future programs.
       write(*,*) '*********************************'
       write(*,*) iter, ftol, fret
 
+      write(*,*) '**************************'
+      write(*,matrix) transpose(h0)
+      write(*,*) '*************  h0     ************'
+
       write(*,vector) v
       write(*,*) 'V_final', '^^^^^^^^^^^^^^^^^^^^^'
+
+      write(*,vector) dsdv
+      write(*,*) 'V_initial ^^^^^^^^^^^^^^^^^^^^^^^'
 
       end

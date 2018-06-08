@@ -37,13 +37,16 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
 C  Recalculating the eigenvectors through the Schrodinger Eqn.
       call hbuild(v,hmat)
 
-      !write(*,*) 'En             '
-      !write(*,vector) En
-      !write(*,*) ' '
-      !write(*,matrix) transpose(hmat)
+!      write(*,*) '***************************'
+!      write(*,matrix) transpose(hmat)
+!      write(*,*) '********  hmat  ***********'
+!      write(*,vector) En
+!      write(*,*) '********  En  **********'
+
 
       dens = 0.d0
       phi = 0.d0
+
 
       call wfmatrix(phi,hmat)
 
@@ -54,11 +57,11 @@ C  Recalculating the eigenvectors through the Schrodinger Eqn.
 ***   Using normalized density to our advantage to reduce the dimensionality of
 ***   the problem. This allows us to pin Bz(b) to zero. We can do the same with
 ***   the density, leading us to just the differene, or n(b) = 1 - n(a).
-      dens(2) = 1-dens(1)
-      dens(sites*4) = 0.d0
-      do i=sites*2+1,sites*3
-        dens(i) = 0.d0
-      end do
+!      dens(2) = 1-dens(1)
+!      dens(sites*4) = 0.d0
+!      do i=sites*2+1,sites*3
+!        dens(i) = 0.d0
+!      end do
 
 C  Calculating the difference integral between the target and current densities.
       integral = 0.d0
@@ -93,21 +96,19 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       do j=1,dim*2
         x = 0.d0
-        counter = 0
         do a=1,sites
           do i=1,spin
             dumpsi(i) = hmat((i-1)*spin+a,occ)
           end do
+!          write(*,vector)dumpsi
+!          write(*,*) '*********** dumpsi ************'
           call derivative(v,1,a,j,dpsi)
 !          dpsis = conjg(dpsi)
-
 
           do i=1,spin
             dpmat(i,(a-1)*2 + 1) = dumpsi(i)
             dpmat(i,(a-1)*2 + 2) = dpsi(i)
           end do
-
-          !call collect(a,dumpsi,dpsi,dpmat)
 
 !          do i=1,spin
 !            do k=1,spin
@@ -126,9 +127,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
         end do
 
-        write(*,*) '******', j, '*********'
+!        write(*,*) '******', j, '*********'
         !write(*,*) '******', a, '*********'
-        write(*,matrix) transpose(dpmat)
+!        write(*,matrix) transpose(dpmat)
 
 
         call dnvec(dn,dpmat)
@@ -145,10 +146,10 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
           write(1,*) dens(i) - ntarget(i)
         end do
         write(1,*) '************************'
-        do i = 1, dim*2
-          write(1,*) dn(i)
-        end do
-        write(1,*) '************************'
+!        do i = 1, dim*2
+!          write(1,*) dn(i)
+!        end do
+!        write(1,*) '************************'
 
 !        if ((j.ge.3).and.(j.le.6)) then
 !          dSdV(j) = 0.d0
@@ -159,19 +160,20 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       end do
 
       write(1,vector) dSdV
-      write(1,*) '************************'
+      write(1,*) '**********  dSdV   **********'
+
       end subroutine
 
 ***************************************************************************
-      subroutine derivative(v,alpha,i,j,dphi)
+      subroutine derivative(v,alpha,i,j,dpsi)
       implicit none
 
       integer :: j,k,l,m,xu,xd,beta
       integer, intent(in) :: i,alpha
-      real(8) :: phi(spin)
+      real(8) :: psi(spin)
       real(8), intent(in) :: v(dim*2)
       real(8) :: vmat(spin,spin), num, denom
-      real(8), intent(out) :: dphi(spin)
+      real(8), intent(out) :: dpsi(spin)
 
 !      vmat(1,1) = 2.d0*one*(v(i) + v(dim*2-sites+i))
 !      vmat(2,1) = 2.d0*one*(v(sites+i) + ione*v(dim+i))
@@ -184,15 +186,21 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   to the site being calculated. xu = spin up at position x, xd = spin
 ***   down at position x.
 ***************************************************************************
-      xu = (i-1)*spin + 1
-      xd = xu + spin
+      xu = i
+      xd = xu + 2
 
-      phi = 0.d0
-      dphi = 0.d0
+      psi = 0.d0
+      dpsi = 0.d0
+
+!      write(*,*) '*******************'
+!      write(*,*) i
+!      write(*,*) xu
+!      write(*,*) xd
+!      write(*,*) '***  a, xu, and xd  ***'
 
       do beta = 1, dim
         if (alpha.eq.beta) then
-          dphi = 0.d0
+          dpsi = 0.d0
 
 ***************************************************************************
 ***   Carrying out perturbation theory multiplication, using potential
@@ -210,8 +218,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &       + 2.d0*hmat(xd,alpha)*(hmat(xd,beta))
           denom = En(beta) - En(alpha)
 
-          dphi(1) = (num/denom)*hmat(xu,beta)
-          dphi(2) = (num/denom)*hmat(xd,beta)
+          dpsi(1) = (num/denom)*hmat(xu,beta)
+          dpsi(2) = (num/denom)*hmat(xd,beta)
 
           !write(*,*) num, denom
 
@@ -220,8 +228,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &      + 2.d0*hmat(xu,alpha)*(hmat(xd,beta))
           denom = En(beta) - En(alpha)
 
-          dphi(1) = num/denom*hmat(xu,beta)
-          dphi(2) = num/denom*hmat(xd,beta)
+          dpsi(1) = (num/denom)*hmat(xu,beta)
+          dpsi(2) = (num/denom)*hmat(xd,beta)
 
           !write(*,*) num, denom
 
@@ -230,8 +238,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &      + 2.d0*hmat(xu,alpha)*(hmat(xd,beta))
           denom = En(beta) - En(alpha)
 
-          dphi(1) = num/denom*hmat(xu,beta)
-          dphi(2) = num/denom*hmat(xd,beta)
+          dpsi(1) = (num/denom)*hmat(xu,beta)
+          dpsi(2) = (num/denom)*hmat(xd,beta)
 
           !write(*,*) num, denom
 
@@ -240,42 +248,45 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &      - 2.d0*hmat(xd,alpha)*(hmat(xd,beta))
           denom = En(beta) - En(alpha)
 
-          dphi(1) = num/denom*hmat(xu,beta)
-          dphi(2) = num/denom*hmat(xd,beta)
+          dpsi(1) = (num/denom)*hmat(xu,beta)
+          dpsi(2) = (num/denom)*hmat(xd,beta)
 
           !write(*,*) num, denom
 
         end if
 
 
-        phi(1) = phi(1) + dphi(1)
-        phi(2) = phi(2) + dphi(2)
+        psi(1) = psi(1) + dpsi(1)
+        psi(2) = psi(2) + dpsi(2)
 
       end do
 
-      dphi = phi
+      dpsi = psi
 
 
       end subroutine
 
 ***************************************************************************
 
-      subroutine dnvec(n0,phi)
+      subroutine dnvec(n0,psi)
       implicit none
 
       integer :: i,j,k,m
       real(8) :: x
-      real(8) :: phi(spin,sites*2), n0(dim*2), test(spin,spin)
+      real(8) :: psi(spin,sites*2), n0(dim*2), test(spin,spin)
       real(8) :: sigma(spin,spin), dum(spin,spin)
 
       do i=1,sites
         do j=1,spin
           do k=1,spin
-            test(j,k) = phi(j,(i-1)*2+2)*phi(k,(i-1)*2+1)
-     &                      + phi(k,(i-1)*2+1)*phi(j,(i-1)*2+2)
+            test(j,k) = psi(j,(i-1)*2+2)*psi(k,(i-1)*2+1)
+     &                      + psi(k,(i-1)*2+1)*psi(j,(i-1)*2+2)
           end do
         end do
 
+        if (dabs(test(j,k)).lt.1d-10) then
+          test(j,k) = 0.d0
+        end if
 
 **************************************************************************
 ***   Beginning of calculation of n, mx, my, mz. The index m runs from 1-
@@ -293,11 +304,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
           x = 0.d0
           do j=1,spin
-            do k=1,spin
-              if (j.eq.k) then
-                x = x + dum(j,k)
-              endif
-            end do
+            x = x + dum(j,j)
           end do
 
           n0(i+(m)*2) = x
@@ -318,21 +325,24 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   (i.e. - n(1) = |a_up|^2, n(3) = a_up x a_down*, n(5) = |b_up|^2)
 ****************************************************************************
 
-      subroutine densvec(n0,phi)
+      subroutine densvec(n0,psi)
       implicit none
 
       integer :: i,j,k,m
       real(8) :: x
-      real(8) :: phi(spin,sites), n0(dim*2), test(spin,spin)
+      real(8) :: psi(spin,sites), n0(dim*2), test(spin,spin)
       real(8) :: sigma(spin,spin), dum(spin,spin)
 
       do i=1,sites
         do j=1,spin
           do k=1,spin
-            test(j,k) = phi(j,i)*phi(k,i)
+            test(j,k) = psi(j,i)*psi(k,i)
+
+            if (dabs(test(j,k)).lt.1d-10) then
+              test(j,k) = 0.d0
+            end if
           end do
         end do
-
 
 **************************************************************************
 ***   Beginning of calculation of n, mx, my, mz. The index m runs from 1-
@@ -375,36 +385,22 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   spin and occupation site in row and column, respectively.
 ***   (i.e.- phi_up(a) = m_11, phi_dn(c) = m_23)
 ****************************************************************************
-      subroutine wfmatrix(phi,h0)
+      subroutine wfmatrix(psi,h0)
       implicit none
 
       integer :: counter, i, j
-      real(8) :: phi(spin,sites), h0(dim,dim)
+      real(8) :: psi(spin,sites), h0(dim,dim)
 
       counter = 0
       do i=1,spin
         do j=1,sites
           counter = counter + 1
-          phi(i,j) = h0(counter,1)
+          psi(i,j) = h0(counter,1)
         end do
       end do
 
       end subroutine wfmatrix
 
-****************************************************************************
-
-      subroutine collect(x,phi,dphi,wfmat)
-      implicit none
-
-      integer :: j,x
-      real(8) :: phi(spin),dphi(spin),wfmat(spin,sites*spin)
-
-      do j=1,spin
-        wfmat(j,(x-1)*2 + 1) = phi(j)
-        wfmat(j,(x-1)*2 + 2) = dphi(j)
-      end do
-
-      end subroutine collect
 
 ****************************************************************************
 
@@ -588,7 +584,7 @@ C         dgg=dgg+xi(j)**2
 14    continue
         pause 'frprmn maximum iterations exceeded'
         return
-        END
+      END subroutine
 C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
 ****************************************************************************
       FUNCTION f1dim(x)
@@ -624,7 +620,7 @@ CU    USES brent,f1dim,mnbrak
         ax=0.d0
         xx=1.d0
         call mnbrak(ax,xx,bx,fa,fx,fb,f1dim)
-        fret=dbrent(ax,xx,bx,f1dim,df1dim,TOL,xmin)
+        fret=brent(ax,xx,bx,f1dim,TOL,xmin)
         do 12 j=1,n
           xi(j)=xmin*xi(j)
           p(j)=p(j)+xi(j)
@@ -632,142 +628,6 @@ CU    USES brent,f1dim,mnbrak
         return
         END subroutine
 C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
-
-*************************************************************************
-      FUNCTION dbrent(ax,bx,cx,f,df,tol,xmin)
-      INTEGER ITMAX
-      REAL(8) dbrent,ax,bx,cx,tol,xmin,df,f,ZEPS
-      EXTERNAL df,f
-      PARAMETER (ITMAX=100,ZEPS=1.0d-10)
-      INTEGER iter
-      REAL(8) a,b,d,d1,d2,du,dv,dw,dx,e
-      REAL(8) fu,fv,fw,fx,olde,tol1,tol2,u,u1,u2,v,w,x,xm
-      LOGICAL ok1,ok2
-      a=min(ax,cx)
-      b=max(ax,cx)
-      v=bx
-      w=v
-      x=v
-      e=0.d0
-      fx=f(x)
-      fv=fx
-      fw=fx
-      dx=df(x)
-      dv=dx
-      dw=dx
-      do 11 iter=1,ITMAX
-        xm=0.5d0*(a+b)
-        tol1=tol*abs(x)+ZEPS
-        tol2=2.d0*tol1
-        if(abs(x-xm).le.(tol2-.5d0*(b-a))) goto 3
-        if(abs(e).gt.tol1) then
-          d1=2.d0*(b-a)
-          d2=d1
-          if(dw.ne.dx) d1=(w-x)*dx/(dx-dw)
-          if(dv.ne.dx) d2=(v-x)*dx/(dx-dv)
-          u1=x+d1
-          u2=x+d2
-          ok1=((a-u1)*(u1-b).gt.0.d0).and.(dx*d1.le.0.d0)
-          ok2=((a-u2)*(u2-b).gt.0.d0).and.(dx*d2.le.0.d0)
-          olde=e
-          e=d
-          if(.not.(ok1.or.ok2))then
-            goto 1
-          else if (ok1.and.ok2)then
-            if(abs(d1).lt.abs(d2))then
-              d=d1
-            else
-              d=d2
-            endif
-          else if (ok1)then
-            d=d1
-          else
-            d=d2
-          endif
-          if(abs(d).gt.abs(0.5d0*olde))goto 1
-          u=x+d
-          if(u-a.lt.tol2 .or. b-u.lt.tol2) d=sign(tol1,xm-x)
-          goto 2
-        endif
-1       if(dx.ge.0.d0) then
-          e=a-x
-        else
-          e=b-x
-        endif
-        d=0.5d0*e
-2       if(abs(d).ge.tol1) then
-          u=x+d
-          fu=f(u)
-        else
-          u=x+sign(tol1,d)
-          fu=f(u)
-          if(fu.gt.fx)goto 3
-        endif
-        du=df(u)
-        if(fu.le.fx) then
-          if(u.ge.x) then
-            a=x
-          else
-            b=x
-          endif
-          v=w
-          fv=fw
-          dv=dw
-          w=x
-          fw=fx
-          dw=dx
-          x=u
-          fx=fu
-          dx=du
-        else
-          if(u.lt.x) then
-            a=u
-          else
-            b=u
-          endif
-          if(fu.le.fw .or. w.eq.x) then
-            v=w
-            fv=fw
-            dv=dw
-            w=u
-            fw=fu
-            dw=du
-          else if(fu.le.fv .or. v.eq.x .or. v.eq.w) then
-            v=u
-            fv=fu
-            dv=du
-          endif
-        endif
-11    continue
-      pause 'dbrent exceeded maximum iterations'
-3     xmin=x
-      dbrent=fx
-      return
-      END
-C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
-
-
-*************************************************************************
-      FUNCTION df1dim(x)
-      INTEGER NMAX
-      REAL(8) df1dim,x
-      PARAMETER (NMAX=50)
-CU    USES dfunc
-      INTEGER j,ncom
-      REAL(8) df(NMAX),pcom(NMAX),xicom(NMAX),xt(NMAX)
-      COMMON /f1com/ pcom,xicom,ncom
-      do 11 j=1,ncom
-        xt(j)=pcom(j)+x*xicom(j)
-11    continue
-      call dfunc(xt,df)
-      df1dim=0.d0
-      do 12 j=1,ncom
-        df1dim=df1dim+df(j)*xicom(j)
-12    continue
-      return
-      END
-C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
-
 ****************************************************************************
 
         SUBROUTINE mnbrak(ax,bx,cx,fa,fb,fc,func)
@@ -920,4 +780,142 @@ C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
         return
       END function
 C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
+
+*****************************************************************************
+
+      FUNCTION dbrent(ax,bx,cx,f,df,tol,xmin)
+      INTEGER ITMAX
+      REAL(8) dbrent,ax,bx,cx,tol,xmin,df,f,ZEPS
+      EXTERNAL df,f
+      PARAMETER (ITMAX=100,ZEPS=1.0d-10)
+      INTEGER iter
+      REAL(8) a,b,d,d1,d2,du,dv,dw,dx,e
+      REAL(8) fu,fv,fw,fx,olde,tol1,tol2,u,u1,u2,v,w,x,xm
+      LOGICAL ok1,ok2
+      a=min(ax,cx)
+      b=max(ax,cx)
+      v=bx
+      w=v
+      x=v
+      e=0.d0
+      fx=f(x)
+      fv=fx
+      fw=fx
+      dx=df(x)
+      dv=dx
+      dw=dx
+      do 11 iter=1,ITMAX
+        xm=0.5d0*(a+b)
+        tol1=tol*abs(x)+ZEPS
+        tol2=2.d0*tol1
+        if(abs(x-xm).le.(tol2-.5d0*(b-a))) goto 3
+        if(abs(e).gt.tol1) then
+          d1=2.d0*(b-a)
+          d2=d1
+          if(dw.ne.dx) d1=(w-x)*dx/(dx-dw)
+          if(dv.ne.dx) d2=(v-x)*dx/(dx-dv)
+          u1=x+d1
+          u2=x+d2
+          ok1=((a-u1)*(u1-b).gt.0.d0).and.(dx*d1.le.0.d0)
+          ok2=((a-u2)*(u2-b).gt.0.d0).and.(dx*d2.le.0.d0)
+          olde=e
+          e=d
+          if(.not.(ok1.or.ok2))then
+            goto 1
+          else if (ok1.and.ok2)then
+            if(abs(d1).lt.abs(d2))then
+              d=d1
+            else
+              d=d2
+            endif
+          else if (ok1)then
+            d=d1
+          else
+            d=d2
+          endif
+          if(abs(d).gt.abs(0.5d0*olde))goto 1
+          u=x+d
+          if(u-a.lt.tol2 .or. b-u.lt.tol2) d=sign(tol1,xm-x)
+          goto 2
+        endif
+1       if(dx.ge.0.d0) then
+          e=a-x
+        else
+          e=b-x
+        endif
+        d=0.5d0*e
+2       if(abs(d).ge.tol1) then
+          u=x+d
+          fu=f(u)
+        else
+          u=x+sign(tol1,d)
+          fu=f(u)
+          if(fu.gt.fx)goto 3
+        endif
+        du=df(u)
+        if(fu.le.fx) then
+          if(u.ge.x) then
+            a=x
+          else
+            b=x
+          endif
+          v=w
+          fv=fw
+          dv=dw
+          w=x
+          fw=fx
+          dw=dx
+          x=u
+          fx=fu
+          dx=du
+        else
+          if(u.lt.x) then
+            a=u
+          else
+            b=u
+          endif
+          if(fu.le.fw .or. w.eq.x) then
+            v=w
+            fv=fw
+            dv=dw
+            w=u
+            fw=fu
+            dw=du
+          else if(fu.le.fv .or. v.eq.x .or. v.eq.w) then
+            v=u
+            fv=fu
+            dv=du
+          endif
+        endif
+11    continue
+      pause 'dbrent exceeded maximum iterations'
+3     xmin=x
+      dbrent=fx
+      return
+      END Function
+C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
+
+
+*************************************************************************
+      FUNCTION df1dim(x)
+      INTEGER NMAX
+      REAL(8) df1dim,x
+      PARAMETER (NMAX=50)
+CU    USES dfunc
+      INTEGER j,ncom
+      REAL(8) df(NMAX),pcom(NMAX),xicom(NMAX),xt(NMAX)
+      COMMON /f1com/ pcom,xicom,ncom
+      do 11 j=1,ncom
+        xt(j)=pcom(j)+x*xicom(j)
+11    continue
+      call dfunc(xt,df)
+      df1dim=0.d0
+      do 12 j=1,ncom
+        df1dim=df1dim+df(j)*xicom(j)
+12    continue
+      return
+      END Function
+C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
+
+
       End Module
