@@ -13,6 +13,7 @@ C  as portability of the code to future programs.
       real(8) :: check(dim)
 
       write(matrix,'(a, i3, a)') '(', dim, 'f8.3)'
+      write(vector,'(a, i3, a)') '(', 1, 'f16.10)'
 
       v(1)=0.d0
       v(2)=-dab

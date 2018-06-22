@@ -32,6 +32,10 @@
 \newcommand{\padn}{{\psi_{\alpha \da}}}
 \newcommand{\pbup}{{\psi_{\beta \ua}}}
 \newcommand{\pbdn}{{\psi_{\beta \da}}}
+\newcommand{\paups}{{\psi_{\alpha \ua}^*}}
+\newcommand{\padns}{{\psi_{\alpha \da}^*}}
+\newcommand{\pbups}{{\psi_{\beta \ua}^*}}
+\newcommand{\pbdns}{{\psi_{\beta \da}^*}}
 
 \begin{document}
 
@@ -242,7 +246,7 @@ The magnetizations are written as:
   \begin{pmatrix}
     n_{\ua \ua}(\bfr) + n_{\da \da}(\bfr) \\
     n_{\ua \da}(\bfr) + n_{\da \ua}(\bfr) \\
-    i\left(n_{\ua \da}(\bfr) + n_{\da \ua}(\bfr)\right) \\
+    i\left(n_{\ua \da}(\bfr) - n_{\da \ua}(\bfr)\right) \\
     n_{\ua \ua}(\bfr) - n_{\da \da}(\bfr) \\
   \end{pmatrix}
   .
@@ -256,8 +260,8 @@ They can be written out explicitly as:
   \nonumber
   \frac{\delta m_1(\bfr)}{\delta V_k(\bfr)} & = & \frac{\delta}{\delta V_k(\bfr)}\Big{(} n_{\ua \da}(\bfr)+n_{\da \ua}(\bfr) \Big{)} \\
   \nonumber
-  \frac{\delta m_2(\bfr)}{\delta V_k(\bfr)} & = & i \frac{\delta}{\delta V_k(\bfr)}\Big{(} n_{\ua \da}(\bfr)+n_{\da \ua}(\bfr) \Big{)} \\
-  \frac{\delta m_3(\bfr)}{\delta V_k(\bfr)} & = & \frac{\delta}{\delta V_k(\bfr)}\Big{(} n_{\ua \ua}(\bfr)-n_{\da \da}(\bfr) \Big{)}
+  \frac{\delta m_2(\bfr)}{\delta V_k(\bfr)} & = & i \frac{\delta}{\delta V_k(\bfr)}\Big{(} n_{\ua \da}(\bfr)-n_{\da \ua}(\bfr) \Big{)} \\
+  \frac{\delta m_3(\bfr)}{\delta V_k(\bfr)} & = & \frac{\delta}{\delta V_k(\bfr)}\Big{(} n_{\ua \ua}(\bfr)-n_{\da \da}(\bfr) \Big{)} .
 \end{eqnarray}
 Clearly, we must determine the derivative of our four matrix values in our spin density matrix.
 Carrying the derivatives out, where we have omitted the potential in the derivative as we assume we are deriving with respect to $V_k(\bfr)$.
@@ -274,7 +278,7 @@ This leads to the differential density matrix $\delta n(\bfr)$.
 
 After deriving the differential density matrix, we can explicitly write out the differential magnetizations that will be calculated.
 \begin{equation}
-  \frac{\delta \vec{m}(\bfr)}{\delta V_k(\bfr)} = \sum_{i=1}^N
+  \frac{\delta \vec{m}(\bfr)}{\delta V_k(\bfr')} = \sum_{i=1}^N
   \begin{pmatrix}
     (\delta \psi_{i \ua}(\bfr) \psi_{i \ua}^*(\bfr) + \psi_{i \ua}(\bfr) \delta \psi_{i \ua}^*(\bfr)) + (\delta \psi_{i \da}(\bfr) \psi_{i \da}^*(\bfr) + \psi_{i \da}(\bfr) \delta \psi_{i \da}^*(\bfr)) \\
     (\delta \psi_{i \ua}(\bfr) \psi_{i \da}^*(\bfr) + \psi_{i \ua}(\bfr) \delta \psi_{i \da}^*(\bfr)) + (\delta \psi_{i \da}(\bfr) \psi_{i \ua}^*(\bfr) + \psi_{i \da}(\bfr) \delta \psi_{i \ua}^*(\bfr)) \\
@@ -289,7 +293,7 @@ Again, we will write the equations using notation from our discretized system ($
 
 \begin{eqnarray}
   \nonumber
-  \frac{\partial \paup(j)}{\partial V_0(k)} &=& \sum_{\beta \neq \alpha} \pbup(j) \frac{1}{E_{\alpha}-E_{\beta}} \{ \pbup^*(k) \paup(k) + \pbdn^*(k) \padn(k) \} \\
+  \frac{\partial \paup(j)}{\partial V_0(k)} & = & \sum_{\beta \neq \alpha} \pbup(j) \frac{1}{E_{\alpha}-E_{\beta}} \{ \pbup^*(k) \paup(k) + \pbdn^*(k) \padn(k) \} \\
   \nonumber
   \frac{\partial \padn(j)}{\partial V_0(k)} &=& \sum_{\beta \neq \alpha} \pbdn(j) \frac{1}{E_{\alpha}-E_{\beta}} \{ \pbup^*(k) \paup(k) + \pbdn^*(k) \padn(k) \} \\
   \nonumber
@@ -316,16 +320,43 @@ We recall Eq. (12), and begin by rewriting our first line:
 Using this equation, we can now let $n=0$, giving us $\frac{\delta m_0(j)}{\delta V_0(k)}$.
 Using the derivatives that we have explicitly written out above, we are left with the following.
 \begin{multline*}
-  \frac{\delta m_0(j)}{\delta V_n(k)}= \sum_{\alpha = 1}^N
-  \Bigg( \sum_{\beta \neq \alpha} \pbup(j) \frac{1}{E_{\alpha}-E_{\beta}} \Big\{ \pbup^*(k) \paup(k) + \pbdn^*(k) \padn(k) \Big\} \paup^*(j) + \\
-  \paup(j) \sum_{\beta \neq \alpha} \pbup^*(j) \frac{1}{E_{\alpha}-E_{\beta}} \Big\{ \pbup(k) \paup^*(k) + \pbdn(k) \padn^*(k) \Big\} \Bigg)
+  \frac{\delta m_0(j)}{\delta V_0(k)}= \sum_{\alpha = 1}^N
+  \Bigg( \sum_{\beta \neq \alpha} \pbup(j) \frac{1}{E_{\alpha}-E_{\beta}} \Big\{ \pbups(k) \paup(k) + \pbdns(k) \padn(k) \Big\} \paups(j) \\ +
+  \paup(j) \sum_{\beta \neq \alpha} \pbups(j) \frac{1}{E_{\alpha}-E_{\beta}} \Big\{ \pbup(k) \paups(k) + \pbdn(k) \padns(k) \Big\} \Bigg)
 \end{multline*}
 \begin{multline*}
   \hspace{1.75cm}
-  + \Bigg( \sum_{\beta \neq \alpha} \pbdn(j) \frac{1}{E_{\alpha}-E_{\beta}} \Big\{ \pbup^*(k) \paup(k) + \pbdn^*(k) \padn(k) \Big\} \padn^*(j) +
-  \\
-  \padn(j) \sum_{\beta \neq \alpha}\pbdn^*(j) \frac{1}{E_{\alpha}-E_{\beta}} \Big\{ \pbup(k) \paup^*(k) + \pbdn(k) \padn^*(k) \Big\} \Bigg)
+  + \Bigg( \sum_{\beta \neq \alpha} \pbdn(j) \frac{1}{E_{\alpha}-E_{\beta}} \Big\{ \pbups(k) \paup(k) + \pbdns(k) \padn(k) \Big\} \padns(j)
+  \\ +
+  \padn(j) \sum_{\beta \neq \alpha}\pbdns(j) \frac{1}{E_{\alpha}-E_{\beta}} \Big\{ \pbup(k) \paups(k) + \pbdn(k) \padns(k) \Big\} \Bigg)
 \end{multline*}
+
+Calculating out the derivatives for each permutation of $\alpha,j,k,$ and $n$, we can then put them into a matrix for storage to be called when needed.
+For our case, the matrix is indexed according to the following matrix/table.
+\begin{center}
+  \begin{tabular}{c @{\hspace{2\tabcolsep}} *{9}{c}}
+    &
+    $\frac{\delta \psi_{1 \sigma}(1)}{\delta V_n(1)}$ &
+    $\frac{\delta \psi_{2 \sigma}(1)}{\delta V_n(1)}$ &
+    $\frac{\delta \psi_{1 \sigma}(2)}{\delta V_n(1)}$ &
+    $\frac{\delta \psi_{2 \sigma}(2)}{\delta V_n(1)}$ &
+    $\frac{\delta \psi_{1 \sigma}(1)}{\delta V_n(2)}$ &
+    $\frac{\delta \psi_{2 \sigma}(1)}{\delta V_n(2)}$ &
+    $\frac{\delta \psi_{1 \sigma}(2)}{\delta V_n(2)}$ &
+    $\frac{\delta \psi_{2 \sigma}(2)}{\delta V_n(2)}$
+    \\[2ex]
+    $\sigma = \ua$, $n=0$ & \# & \# & \# & \# & \# & \# & \# & \# \\
+    $\sigma = \ua$, $n=1$ & \# & \# & \# & \# & \# & \# & \# & \# \\
+    $\sigma = \ua$, $n=2$ & \# & \# & \# & \# & \# & \# & \# & \# \\
+    $\sigma = \ua$, $n=3$ & \# & \# & \# & \# & \# & \# & \# & \# \\
+    $\sigma = \da$, $n=0$ & \# & \# & \# & \# & \# & \# & \# & \# \\
+    $\sigma = \da$, $n=1$ & \# & \# & \# & \# & \# & \# & \# & \# \\
+    $\sigma = \da$, $n=2$ & \# & \# & \# & \# & \# & \# & \# & \# \\
+    $\sigma = \da$, $n=3$ & \# & \# & \# & \# & \# & \# & \# & \#
+  \end{tabular}
+\end{center}
+
+
 % ================== Bibliography =======================
 %\bibliography{working-bib-corrected}
 %\bibliographystyle{apsrev4-1}

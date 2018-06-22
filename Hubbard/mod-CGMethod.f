@@ -12,7 +12,7 @@
       real(kind=8) :: ntarget(dim*2),d0(dim),hmat(dim,dim)
       real(kind=8) :: density,dphi(dim,dim),En(dim)!,omega(n-1)
 
-      character (len=30) :: matrix
+      character (len=30) :: matrix,vector
 
       contains
 
