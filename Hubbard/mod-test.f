@@ -10,7 +10,7 @@
       integer :: number
       real(8) :: hmat(dim,dim), ntarget(dim*2), En(dim)
       real(8) :: tBx(sites), tBy(sites), tBz(sites)
-      real(8) :: sig(spin*4,spin*4),dens(dim*2)
+      real(8) :: sig(spin*4,spin*4)!,dens(dim*2)
 !      real (8), parameter :: Zero = (0.d0,0.d0), One = (1.d0,0.d0)
 !      real (8), parameter :: IOne = (0.d0,1.d0)
 
@@ -25,7 +25,7 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
       function func(v) result(integral)
       implicit none
       integer :: i
-      real(8) :: v(dim*2), integral!, dens(dim*2)
+      real(8) :: v(dim*2), integral, dens(dim*2)
 
 !      do i=3,6
 !        v(i) = 0.d0
@@ -37,6 +37,9 @@ C  Recalculating the eigenvectors through the Schrodinger Eqn.
       call hbuild(v,hmat)
 
       dens = 0.d0
+
+!      write(*,matrix) transpose(hmat)
+!      write(*,*) '^^^^^^ hmat ^^^^^^'
 
       call densvec(dens,hmat)
 
@@ -60,11 +63,12 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       implicit none
       integer :: j,k,counter,num
-      real(8) :: v(dim*2),x,dSdV(dim*2)!dens(dim*2),dSdV(dim*2)
+      real(8) :: v(dim*2),x,dens(dim*2),dSdV(dim*2)
       real(8) :: dn(dim*2)!, wfmat(spin,sites)
       real(8) :: vec(8,(occ+sites)*sites)
 
       call vmat(vec)
+      call densvec(dens,hmat)
 
       dSdV = 0.d0
       dn = 0.d0
@@ -81,6 +85,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
           dSdV(counter) = 2.d0*x
         end do
       end do
+
+      write(*,vector) dens
+      write(*,*) '^^^^^ dens ^^^^^'
 
       write(*,*) '***************************'
       write(*,vector) dSdV
@@ -108,10 +115,12 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
                 mat(dim*(s-1)+num,counter) =
      &                      derivative(alpha,j,k,num,s)
                 if (number.eq.1) then
+                  if (num.eq.1.and.k.eq.2) then
                 write(*,*) '**************************'
               write(*,*) 'alpha=',alpha,'j=',j,'k=',k,'num=',num,'s=',s
                 write(*,*) derivative(alpha,j,k,num,s)
                 write(*,*) '^^^^^^^^ derivative ^^^^^^^^'
+                  end if
                 endif
               end do
             end do
@@ -197,7 +206,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       end function
 
 ***************************************************************************
-*****
+
       subroutine dnvec(num,k,dn,vec)
       implicit none
 
@@ -214,11 +223,12 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***************************************************************************
       do j=1,sites
         x = 0.d0
+        y = 0.d0
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*2+alpha)*hmat(j,alpha) +
-     &           hmat(j,alpha)*vec(num,i+(j-1)*2+alpha)
-          y = y + vec(num+4,i+(j-1)*2+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*2+alpha)
+          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j,alpha) +
+     &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
+          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
+     &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
         end do
         dn(j) = x + y
       end do
@@ -231,11 +241,12 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       counter = sites
       do j=1,sites
         x = 0.d0
+        y = 0.d0
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*2+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j,alpha)*vec(num+4,i+(j-1)*2+alpha)
-          y = y + vec(num+4,i+(j-1)*2+alpha)*hmat(j,alpha) +
-     &           hmat(j+sites,alpha)*vec(num,i+(j-1)*2+alpha)
+          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
+     &           hmat(j,alpha)*vec(num+4,i+(j-1)*occ+alpha)
+          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j,alpha) +
+     &           hmat(j+sites,alpha)*vec(num,i+(j-1)*occ+alpha)
         end do
         dn(counter + j) = x + y
       end do
@@ -247,11 +258,12 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       counter = sites*2
       do j=1,sites
         x = 0.d0
+        y = 0.d0
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*2+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j,alpha)*vec(num+4,i+(j-1)*2+alpha)
-          y = y + vec(num+4,i+(j-1)*2+alpha)*hmat(j,alpha) +
-     &           hmat(j+sites,alpha)*vec(num,i+(j-1)*2+alpha)
+          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
+     &           hmat(j,alpha)*vec(num+4,i+(j-1)*occ+alpha)
+          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j,alpha) +
+     &           hmat(j+sites,alpha)*vec(num,i+(j-1)*occ+alpha)
         end do
         dn(counter + j) = 0.d0!ione*(x - y)
       end do
@@ -263,18 +275,19 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       counter = sites*3
       do j=1,sites
         x = 0.d0
+        y = 0.d0
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*2+alpha)*hmat(j,alpha) +
-     &           hmat(j,alpha)*vec(num,i+(j-1)*2+alpha)
-          y = y + vec(num+4,i+(j-1)*2+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*2+alpha)
+          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j,alpha) +
+     &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
+          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
+     &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
         end do
         dn(counter + j) = x - y
       end do
 
-!      write(*,*) '*********************'
-!      write(*,vector) dn
-!      write(*,*) '^^^^^^^^ dn ^^^^^^^^^'
+      write(*,*) '*********************'
+      write(*,vector) dn
+      write(*,*) '^^^^^^^^ dn ^^^^^^^^^'
 
 
       end subroutine dnvec

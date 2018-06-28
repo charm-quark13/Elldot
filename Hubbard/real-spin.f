@@ -110,6 +110,8 @@ C  as portability of the code to future programs.
 ***   subroutine.
 ***************************************************************************
 
+      write(*,vector) v
+      write(*,*) '^^^^^ v_test ^^^^^'
       !call hbuild(v,hmat)
 
       call frprmn(v,dim*2,ftol,iter,fret)
