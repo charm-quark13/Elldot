@@ -77,9 +77,15 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       do num=1,dim
         do k=1,sites
           call dnvec(num,k,dn,vec)
+          write(*,*) 'k    =',k,'num    =', num
           x = 0.d0
           do j=1,dim*2
             x = x + (dens(j)-ntarget(j))*dn(j)
+
+            if (num.eq.1.and.k.eq.2) then
+              write(*,*) 'dn  =', dn(j)
+            end if
+
           end do
           counter = counter + 1
           dSdV(counter) = 2.d0*x
@@ -115,7 +121,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
                 mat(dim*(s-1)+num,counter) =
      &                      derivative(alpha,j,k,num,s)
                 if (number.eq.1) then
-                  if (num.eq.1.and.k.eq.2) then
+                  if (num.eq.1.and.k.eq.2.and.j.eq.2) then
                 write(*,*) '**************************'
               write(*,*) 'alpha=',alpha,'j=',j,'k=',k,'num=',num,'s=',s
                 write(*,*) derivative(alpha,j,k,num,s)
@@ -210,7 +216,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       subroutine dnvec(num,k,dn,vec)
       implicit none
 
-      integer :: i,j,k,num,alpha,counter
+      integer :: i,j,k,num,alpha,counter,dum
       real(8) :: x,y
       real(8),intent(in) :: vec(8,(occ+sites)*sites)
       real(8),intent(out) :: dn(dim*2)
@@ -229,6 +235,18 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
           y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
      &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
+
+         if (num.eq.1.and.k.eq.2) then
+           dum = i+(j-1)*occ+alpha
+           write(*,*) 'alpha =',alpha,'j  =',j
+           write(*,*) 'psi_up  =',hmat(j,alpha)!vec(num,dum)*hmat(j,alpha)
+     &                 ,'psi_dn  =', hmat(j+sites,alpha)!vec(num+4,dum)*hmat(j+sites,alpha)
+           write(*,*) 'vec_up   =',vec(num,dum)
+     &                          ,'vec_dn  =',vec(num+4,dum)
+            write(*,*) 'x      =',x, '   y      =', y
+
+         end if
+
         end do
         dn(j) = x + y
       end do
@@ -281,6 +299,19 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
           y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
      &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
+
+         if (num.eq.1.and.k.eq.2) then
+           dum = i+(j-1)*occ+alpha
+           write(*,*) 'alpha =',alpha,'j  =',j
+           write(*,*) 'psi_up  =',hmat(j,alpha)!vec(num,dum)*hmat(j,alpha)
+     &                 ,'psi_dn  =', hmat(j+sites,alpha)!vec(num+4,dum)*hmat(j+sites,alpha)
+           write(*,*) 'vec_up   =',vec(num,dum)
+     &                          ,'vec_dn  =',vec(num+4,dum)
+            write(*,*) 'x      =',x, '   y      =', y
+
+         end if
+
+
         end do
         dn(counter + j) = x - y
       end do
