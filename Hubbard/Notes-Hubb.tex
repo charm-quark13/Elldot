@@ -208,7 +208,7 @@ In order to do this, we will transform our notation, where greek letters $\alpha
 
 \begin{equation}
   \delta \Psi_{\alpha}(j) \\
-  = \sum_{\beta \neq \alpha} \frac{\bra{\Psi_{\beta}(k)} \delta V(k) \ket{\Psi_{\alpha}(k)}}
+  = \sum_{\beta \neq \alpha} \frac{\bra{\Psi_{\beta}(l)} \delta V(k) \ket{\Psi_{\alpha}(l)}}
   {E_{\alpha} - E_{\beta}}
   \Psi_{\beta}(j)
 \end{equation}
@@ -226,7 +226,7 @@ Additionally, we can see the summations explicitly.
     \psi_{\beta \da}(j) \\
   \end{pmatrix}
   \frac{1}{E_{\alpha} - E_{\beta}} \times \\
-  \sum_{k=1}^{\text{sites}} \left\{ \left([V_0(k) + V_3(k)]\psi_{\alpha \ua}(k) + [V_1(k) - i V_2(k)]\psi_{\alpha \da}(k)\Big{)}\psi_{\beta \ua}^*(k) +  \right([V_1(k) + i V_2(k)]\psi_{\alpha \ua}(k) + [V_0(k) -  V_3(k)]\psi_{\alpha \da}(k)\Big{)} \psi_{\beta \da}^*(k) \right \}
+  \sum_{k=1}^{\text{sites}} \sum_{l=1}^{\text{sites}} \left\{ \left([V_0(k) + V_3(k)]\psi_{\alpha \ua}(l) + [V_1(k) - i V_2(k)]\psi_{\alpha \da}(l)\Big{)}\psi_{\beta \ua}^*(l) +  \right([V_1(k) + i V_2(k)]\psi_{\alpha \ua}(l) + [V_0(k) -  V_3(k)]\psi_{\alpha \da}(l)\Big{)} \psi_{\beta \da}^*(l) \right \}
 \end{multline}
 
 Having $\delta \Psi_{\alpha}(\bfr)$, we can now look at how we can formulate our density functional derivative.

@@ -3,6 +3,7 @@ C  Here I use a module to allow for the passing of global variables as well
 C  as portability of the code to future programs.
 !      USE RealCGMethod
       USE testCG
+!      USE spindensCG
       Implicit none
 
       integer :: i,iter, itol

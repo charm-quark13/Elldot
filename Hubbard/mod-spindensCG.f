@@ -1,4 +1,4 @@
-      Module testCG
+      Module spindensCG
 
       IMPLICIT NONE
 
@@ -27,11 +27,13 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
       integer :: i
       real(8) :: v(dim*2), integral, dens(dim*2)
 
-      do i=3,6
-        v(i) = 0.d0
-      end do
-      v(1) = 0.d0
+!      do i=3,6
+!        v(i) = 0.d0
+!      end do
+
 !      write(*,vector) v
+
+      !call potgen(v)
 
 C  Recalculating the eigenvectors through the Schrodinger Eqn.
       call hbuild(v,hmat)
@@ -82,9 +84,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
           do j=1,dim*2
             x = x + (dens(j)-ntarget(j))*dn(j)
 
-!            if (num.eq.1.and.k.eq.2) then
-!              write(*,*) 'dn  =', dn(j)
-!            end if
+            if (num.eq.1.and.k.eq.2) then
+              write(*,*) 'dn  =', dn(j)
+            end if
 
           end do
           counter = counter + 1
@@ -194,7 +196,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
         elseif (num.eq.3) then
           numer = 0.d0
-!          numer = hmat(m,beta)*(-hmat(k,beta)*hmat(k+sites,alpha)+
+!          num = hmat(m,beta)*(-hmat(k,beta)*hmat(k+sites,alpha)+
 !     &                          hmat(k+sites,beta)*hmat(k,alpha))*ione
 
         else
@@ -203,9 +205,11 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
         end if
 
-        x = numer/denom
+
         if (alpha.eq.beta) then
           x = 0.d0
+        else
+          x = numer/denom
         end if
 
         dp = dp + x
@@ -226,9 +230,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       i = (k-1)*(occ+sites)
 
-
 ***************************************************************************
-***   Solving the derivative for the first potential (V_0)
+***   Solving the derivative for the density (m_0)
 ***************************************************************************
       do j=1,sites
         x = 0.d0
@@ -236,27 +239,17 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         do alpha = 1, 2
           x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j,alpha) +
      &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
-          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
-
-!         if (num.eq.1.and.k.eq.2) then
-!           dum = i+(j-1)*occ+alpha
-!           write(*,*) 'alpha =',alpha,'j  =',j
-!           write(*,*) 'psi_up  =',hmat(j,alpha)!vec(num,dum)*hmat(j,alpha)
-!     &                 ,'psi_dn  =', hmat(j+sites,alpha)!vec(num+4,dum)*hmat(j+sites,alpha)
-!           write(*,*) 'vec_up   =',vec(num,dum)
-!     &                          ,'vec_dn  =',vec(num+4,dum)
-!            write(*,*) 'x      =',x, '   y      =', y
-!
-!         end if
+!          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
+!     &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
 
         end do
-        dn(j) = x + y
+!        dn((j-1)*(occ+sites)+1) = x
+        dn(j) = x
       end do
 
 
 ***************************************************************************
-***   Solving the derivative for the second potential (V_1)
+***   Solving the derivative for the first magnetization (m_1)
 ***************************************************************************
 
       counter = sites
@@ -264,16 +257,17 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         x = 0.d0
         y = 0.d0
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j,alpha)*vec(num+4,i+(j-1)*occ+alpha)
+!          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
+!     &           hmat(j,alpha)*vec(num+4,i+(j-1)*occ+alpha)
           y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j,alpha) +
      &           hmat(j+sites,alpha)*vec(num,i+(j-1)*occ+alpha)
         end do
-        dn(counter + j) = x + y
+!        dn((j-1)*(occ+sites)+2) = y
+        dn(counter + j) = y
       end do
 
 ***************************************************************************
-***   Solving the derivative for the third potential (V_2)
+***   Solving the derivative for the second magnetization (m_2)
 ***************************************************************************
 
       counter = sites*2
@@ -283,14 +277,15 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         do alpha = 1, 2
           x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
      &           hmat(j,alpha)*vec(num+4,i+(j-1)*occ+alpha)
-          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j,alpha) +
-     &           hmat(j+sites,alpha)*vec(num,i+(j-1)*occ+alpha)
+!          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j,alpha) +
+!     &           hmat(j+sites,alpha)*vec(num,i+(j-1)*occ+alpha)
         end do
-        dn(counter + j) = 0.d0!ione*(x - y)
+!        dn((j-1)*(occ+sites)+3) = 0.d0!ione*(x - y)
+        dn(counter + j) = 0.d0
       end do
 
 ***************************************************************************
-***   Solving the derivative for the fourth potential (V_3)
+***   Solving the derivative for the third magnetization (m_3)
 ***************************************************************************
 
       counter = sites*3
@@ -298,25 +293,14 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         x = 0.d0
         y = 0.d0
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j,alpha) +
-     &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
+!          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j,alpha) +
+!     &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
           y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
      &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
 
-!         if (num.eq.1.and.k.eq.2) then
-!           dum = i+(j-1)*occ+alpha
-!           write(*,*) 'alpha =',alpha,'j  =',j
-!           write(*,*) 'psi_up  =',hmat(j,alpha)!vec(num,dum)*hmat(j,alpha)
-!     &                 ,'psi_dn  =', hmat(j+sites,alpha)!vec(num+4,dum)*hmat(j+sites,alpha)
-!           write(*,*) 'vec_up   =',vec(num,dum)
-!     &                          ,'vec_dn  =',vec(num+4,dum)
-!            write(*,*) 'x      =',x, '   y      =', y
-!
-!         end if
-
-
         end do
-        dn(counter + j) = x - y
+!        dn((j-1)*(occ+sites)+4) = y
+        dn(counter + j) = y
       end do
 
       write(*,*) '*********************'
@@ -326,19 +310,10 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       end subroutine dnvec
 
-****************************************************************************
-***   Density vector calculation subroutine
-****************************************************************************
-***   Calculates the spin density matrix in vectorized form. Each site is
-***   listed as a 4-vector stacked on top of one another.
-***   (i.e. - n(1) = |a_up|^2, n(3) = a_up x a_down*, n(5) = |b_up|^2)
-****************************************************************************
-
-      subroutine densvec(n0,h0)
+      subroutine potgen(v)
       implicit none
 
-      real(8), intent(out) :: n0(dim*2)
-      real(8), intent(in) :: h0(dim,dim)
+      real(8), intent(inout) :: v(dim*2)
       integer :: i,j,k,m
       real(8) :: x
       real(8) :: test(spin,spin)
@@ -346,10 +321,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       test = 0.d0
 
-      n0 = 0.d0
-
       do i=1,sites
-        call spinmat(i,occ,h0,test)
+        call spinmat(i,occ,hmat,test)
 
 **************************************************************************
 ***   Beginning of calculation of n, mx, my, mz. The index m runs from 1-
@@ -371,9 +344,54 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
             x = x + dum(j,j)
           end do
 
-          n0(i+m*sites) = x
+          v(i+m*sites) = x
 
         end do
+      end do
+
+      v(1) = 0.d0
+
+      do i=3,6
+        v(i) = 0.d0
+      end do
+
+      end subroutine
+****************************************************************************
+***   Density vector calculation subroutine
+****************************************************************************
+***   Calculates the spin density matrix in vectorized form. Each site is
+***   listed as a 4-vector stacked on top of one another.
+***   (i.e. - n(1) = |a_up|^2, n(3) = a_up x a_down*, n(5) = |b_up|^2)
+****************************************************************************
+      subroutine densvec(n0,h0)
+      implicit none
+
+      real(8), intent(out) :: n0(dim*2)
+      real(8), intent(in) :: h0(dim,dim)
+      integer :: i,j,k,m,counter
+      real(8) :: x
+      real(8) :: test(spin,spin)
+      real(8) :: sigma(spin,spin), dum(spin,spin)
+
+      test = 0.d0
+      n0 = 0.d0
+
+      counter = 0
+
+      do i=1,sites
+        call spinmat(i,occ,h0,test)
+
+**************************************************************************
+***   Beginning of calculation of n, mx, my, mz. The index m runs from 1-
+***   to-4 for the density and then each magnetization direction.
+**************************************************************************
+        do j=1,spin
+          do k=1,spin
+            counter = counter + 1
+            n0(counter) = test(k,j)
+          end do
+        end do
+
       end do
 
       end subroutine densvec
