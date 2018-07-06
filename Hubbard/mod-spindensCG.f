@@ -33,7 +33,7 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
 
 !      write(*,vector) v
 
-      !call potgen(v)
+!      call potgen(v)
 
 C  Recalculating the eigenvectors through the Schrodinger Eqn.
       call hbuild(v,hmat)
@@ -187,11 +187,11 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   Bxb=V(sites + 2), putting it in the second equation.)
 ***************************************************************************
         if (num.eq.1) then
-          numer = hmat(m,beta)*(hmat(k,beta)*hmat(k,alpha)+
+          numer = 2.d0*hmat(m,beta)*(hmat(k,beta)*hmat(k,alpha)+
      &                          hmat(k+sites,beta)*hmat(k+sites,alpha))
 
         elseif (num.eq.2) then
-          numer = hmat(m,beta)*(hmat(k,beta)*hmat(k+sites,alpha)+
+          numer = 2.d0*hmat(m,beta)*(hmat(k,beta)*hmat(k+sites,alpha)+
      &                          hmat(k+sites,beta)*hmat(k,alpha))
 
         elseif (num.eq.3) then
@@ -200,7 +200,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 !     &                          hmat(k+sites,beta)*hmat(k,alpha))*ione
 
         else
-          numer = hmat(m,beta)*(hmat(k,beta)*hmat(k,alpha) -
+          numer = 2.d0*hmat(m,beta)*(hmat(k,beta)*hmat(k,alpha) -
      &                          hmat(k+sites,beta)*hmat(k+sites,alpha))
 
         end if

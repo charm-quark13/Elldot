@@ -2,8 +2,8 @@
 C  Here I use a module to allow for the passing of global variables as well
 C  as portability of the code to future programs.
 !      USE RealCGMethod
-      USE testCG
-!      USE spindensCG
+!      USE testCG
+      USE spindensCG
       Implicit none
 
       integer :: i,iter, itol
@@ -26,10 +26,11 @@ C  as portability of the code to future programs.
 
       vi = 0.d0
 
-      Bx = 0.d0
+      Bx(1) = .05d0
+      Bx(2) = -.02d0
       By = 0.d0
-      Bz(1) = 1.d0
-      Bz(2) = -.5d0
+      Bz(1) = .06d0
+      Bz(2) = -.15d0
 
 ***************************************************************************
 ***   Setting the initial potentials which will generate our target density.
@@ -95,10 +96,11 @@ C  as portability of the code to future programs.
           end if
         end do
 
-        Bx = 0.d0
+        Bx(1) = -.125d0
+        Bx(2) = .03d0
         By = 0.d0
         Bz(1) = 1.d0
-        Bz(2) = -x
+        Bz(2) = x
 
         do i=1,sites
           v(sites+i) = Bx(i)
@@ -125,9 +127,9 @@ C  as portability of the code to future programs.
 !      write(*,*) '*************  h0     ************'
 
       write(*,vector) v
-      write(*,*) 'V_final', '^^^^^^^^^^^^^^^^^^^^^'
+      write(*,*) 'v_final', '^^^^^^^^^^^^^^^^^^^^^'
 
       write(*,vector) vi
-      write(*,*) 'V_initial ^^^^^^^^^^^^^^^^^^^^^^^'
+      write(*,*) 'v_target ^^^^^^^^^^^^^^^^^^^^^^^'
 
       end
