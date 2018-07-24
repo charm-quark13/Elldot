@@ -3,14 +3,13 @@
       IMPLICIT NONE
 
       integer,parameter :: spin=2, sites = 2, occ=2
-      integer, parameter :: dim=spin*sites!,lwork=136
+      integer, parameter :: dim=spin*sites
       real(kind=8), parameter :: t=0.5d0
-      !real(kind=8), parameter :: dab=2.d0,dbc=-3.d0,dcd=1.5d0
 
       integer :: number
-      real(8) :: hmat(dim,dim), ntarget(dim*2), En(dim)
+      real(8) :: hmat(dim,dim), ntarget(dim*2), En(dim), cn(6)
       real(8) :: tBx(sites), tBy(sites), tBz(sites)
-      real(8) :: sig(spin*4,spin*4)!,dens(dim*2)
+      real(8) :: sig(spin*4,spin*4)
 !      real (8), parameter :: Zero = (0.d0,0.d0), One = (1.d0,0.d0)
 !      real (8), parameter :: IOne = (0.d0,1.d0)
 
@@ -27,19 +26,21 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
       integer :: i
       real(8) :: v(dim*2), integral, dens(dim*2)
 
-      do i=3,6
-        v(i) = 0.d0
-      end do
-      v(1) = 0.d0
-!      write(*,vector) v
+      number = number + 1
 
-C  Recalculating the eigenvectors through the Schrodinger Eqn.
+***   We can set one scalar potential to zero, as the difference between the
+***   relative difference between the two potentials is all that matters.
+***   Additionally, because of the nature of the Hubbard Dimer, we can set
+***   one magnetic potential to zero, as the magnetizations of the two sites
+***   must satisfy: |vec(m_1)| = |vec(m_2)|.
+
+      v(1) = 0.d0
+      v(7) = 0.d0
+
+C  Recalculating the eigenvectors through exact diagonalization of the Hamiltonian.
       call hbuild(v,hmat)
 
       dens = 0.d0
-
-!      write(*,matrix) transpose(hmat)
-!      write(*,*) '^^^^^^ hmat ^^^^^^'
 
       call densvec(dens,hmat)
 
@@ -73,29 +74,26 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       dSdV = 0.d0
       dn = 0.d0
 
+***   Beginning of the loop to calculate the integral of dS/dV.
+***   The subroutine dnvec generates the gradient vector of the density or
+***   magnetization with respect to each potential on each site.
+
       counter = 0
       do num=1,dim
         do k=1,sites
           call dnvec(num,k,dn,vec)
-          write(*,*) 'k    =',k,'num    =', num
           x = 0.d0
           do j=1,dim*2
             x = x + (dens(j)-ntarget(j))*dn(j)
-
-!            if (num.eq.1.and.k.eq.2) then
-!              write(*,*) 'dn  =', dn(j)
-!            end if
-
           end do
           counter = counter + 1
           dSdV(counter) = 2.d0*x
         end do
       end do
 
-      write(*,vector) dens
-      write(*,*) '^^^^^ dens ^^^^^'
+***   The derivative, dS/dV, will be all zeros when a minimum state of dens
+***   has been reached (i.e.- when dens = ntarget).
 
-      write(*,*) '***************************'
       write(*,vector) dSdV
       write(*,*) '^^^^^^^^^^^^ dSdV ^^^^^^^^^^^^'
 
@@ -108,7 +106,11 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       integer :: j,k,s,num,alpha,counter
       real(8) :: x
 
-      number = number + 1
+***   vmat generates a matrix containing the values of the derivatives of
+***   psi_up and psi_dn for each occupied state with respect to each potential.
+***   Please see the LaTeX write up for exact ordering of the matrix. The values
+***   are used in the dnvec calculations to calculate the magnetization
+***   derivatives.
 
       counter = 0
       do k=1,sites
@@ -120,26 +122,11 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
               do num=1,dim
                 mat(dim*(s-1)+num,counter) =
      &                      derivative(alpha,j,k,num,s)
-                if (number.eq.1) then
-                  if (num.eq.1.and.k.eq.2.and.j.eq.2) then
-                write(*,*) '**************************'
-              write(*,*) 'alpha=',alpha,'j=',j,'k=',k,'num=',num,'s=',s
-                write(*,*) derivative(alpha,j,k,num,s)
-                write(*,*) '^^^^^^^^ derivative ^^^^^^^^'
-                  end if
-                endif
               end do
             end do
           end do
         end do
       end do
-
-      if ( number.eq.1 ) then
-        write(1,matrix) transpose(hmat)
-        write(1,*) '^^^^^^ hmat ^^^^^^'
-        write(1,vector) En
-        write(1,*) '^^^^^^  En  ^^^^^^'
-      end if
 
       end subroutine vmat
 
@@ -174,7 +161,6 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       do beta = 1, dim
         denom = En(alpha) - En(beta)
 
-***************************************************************************
 ***   Carrying out perturbation theory multiplication, using potential
 ***   matrix and spinors gives:
 ***   ( {[V0 + V3]Phi_aup + [V1-iV2]Phi*_bup + ... } * Phi_j spinor
@@ -183,7 +169,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   equations for potential derivative. (i.e. - Va = V(1) so j<=sites,
 ***   which means it would use the first equation. Likewise,
 ***   Bxb=V(sites + 2), putting it in the second equation.)
-***************************************************************************
+
         if (num.eq.1) then
           numer = hmat(m,beta)*(hmat(k,beta)*hmat(k,alpha)+
      &                          hmat(k+sites,beta)*hmat(k+sites,alpha))
@@ -204,6 +190,11 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         end if
 
         x = numer/denom
+
+***   From nondegenerate perturbation theory, if psi_alpha = psi_beta, then we
+***   must get zero for that summation value. The if statement fixes this.
+***   The final line is the explicit summation over each value.
+
         if (alpha.eq.beta) then
           x = 0.d0
         end if
@@ -224,12 +215,29 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       real(8),intent(in) :: vec(8,(occ+sites)*sites)
       real(8),intent(out) :: dn(dim*2)
 
+**************************************************************************
+***   Subroutine calculating the magnetizations and densities of the system at
+***   each site with an occupation number of occ.
+***   For the subroutine, num refers to each potential (V_0, V_1, ...), k is the
+***   site where the potential is being applied, j is the site at which the
+***   magnetization/density is being calculated, and alpha are the occupied
+***   orbitals.
+**************************************************************************
+
+***   The equation for i is a pointer that sets the columns that will be looped
+***   over in the vec matrix used to calculate the magnetizations/densities.
+***   For explicit representation of the vec matrix, see the LaTeX document.
+
       i = (k-1)*(occ+sites)
 
+***   Solving the first magnetization (m_0)
+***   See the LaTeX for the explicit representation of the vec matrix.
+***   The x value for each loop is the first part of each magnetization/density
+***   equation. For m_0, it is:
+***   x = [(dpsi_up/dV)(psi_up)* + (psi_up)(d(psi_up)*/dV)]
+***   y = [(dpsi_dn/dV)(psi_dn)* + (psi_dn)(d(psi_dn)*/dV)]
+***   d(m_0)/dV = x + y
 
-***************************************************************************
-***   Solving the derivative for the first potential (V_0)
-***************************************************************************
       do j=1,sites
         x = 0.d0
         y = 0.d0
@@ -239,24 +247,13 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
           y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
      &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
 
-!         if (num.eq.1.and.k.eq.2) then
-!           dum = i+(j-1)*occ+alpha
-!           write(*,*) 'alpha =',alpha,'j  =',j
-!           write(*,*) 'psi_up  =',hmat(j,alpha)!vec(num,dum)*hmat(j,alpha)
-!     &                 ,'psi_dn  =', hmat(j+sites,alpha)!vec(num+4,dum)*hmat(j+sites,alpha)
-!           write(*,*) 'vec_up   =',vec(num,dum)
-!     &                          ,'vec_dn  =',vec(num+4,dum)
-!            write(*,*) 'x      =',x, '   y      =', y
-!
-!         end if
-
         end do
         dn(j) = x + y
       end do
 
 
 ***************************************************************************
-***   Solving the derivative for the second potential (V_1)
+***   Solving the second magnetization (m_1)
 ***************************************************************************
 
       counter = sites
@@ -273,7 +270,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       end do
 
 ***************************************************************************
-***   Solving the derivative for the third potential (V_2)
+***   Solving the third magnetization (m_2)
 ***************************************************************************
 
       counter = sites*2
@@ -290,7 +287,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       end do
 
 ***************************************************************************
-***   Solving the derivative for the fourth potential (V_3)
+***   Solving the fourth magnetization (m_3)
 ***************************************************************************
 
       counter = sites*3
@@ -302,27 +299,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
           y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
      &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
-
-!         if (num.eq.1.and.k.eq.2) then
-!           dum = i+(j-1)*occ+alpha
-!           write(*,*) 'alpha =',alpha,'j  =',j
-!           write(*,*) 'psi_up  =',hmat(j,alpha)!vec(num,dum)*hmat(j,alpha)
-!     &                 ,'psi_dn  =', hmat(j+sites,alpha)!vec(num+4,dum)*hmat(j+sites,alpha)
-!           write(*,*) 'vec_up   =',vec(num,dum)
-!     &                          ,'vec_dn  =',vec(num+4,dum)
-!            write(*,*) 'x      =',x, '   y      =', y
-!
-!         end if
-
-
         end do
         dn(counter + j) = x - y
       end do
-
-      write(*,*) '*********************'
-      write(*,vector) dn
-      write(*,*) '^^^^^^^^ dn ^^^^^^^^^'
-
 
       end subroutine dnvec
 
@@ -379,18 +358,19 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       end subroutine densvec
 
 ****************************************************************************
-***   Wavefunction matrix population subroutine.
-****************************************************************************
-***   Matrix values are wave amplitudes populated according to
-***   spin and occupation site in row and column, respectively.
-***   (i.e.- phi_up(a) = m_11, phi_dn(c) = m_23)
-****************************************************************************
       subroutine wfmatrix(nocc,psi,h0)
       implicit none
 
       integer :: counter, i, j, nocc
       real(8) :: psi(spin,sites), h0(dim,dim)
 
+****************************************************************************
+***   Wavefunction matrix population subroutine.
+****************************************************************************
+***   Matrix values are wave amplitudes populated according to
+***   spin and occupation site in row and column, respectively.
+***   (i.e.- phi_up(a) = m_11, phi_dn(c) = m_23)
+****************************************************************************
       counter = 0
       do i=1,spin
         do j=1,sites
@@ -410,12 +390,14 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       integer :: j,k,m
       real(8) :: psi(spin,sites)
 
+***************************************************************************
+***   Generating the spin density matrix for each lattice site for all occupied
+***   states.
+***************************************************************************
+
       mat = 0.d0
       do m=1,nocc
         call wfmatrix(m,psi,ham)
-!        write(*,*) '***********',loc,m,'************'
-!        write(*,matprint) transpose(psi)
-!        write(*,*) '^^^^^^^^^ wf ^^^^^^^^^^'
         do j=1,spin
           do k=1,spin
             mat(j,k) = mat(j,k) + psi(j,loc)*psi(k,loc)
@@ -430,6 +412,72 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
 ****************************************************************************
 
+      subroutine intdens(n0,inmat)
+      implicit none
+
+      real(8),intent(out) :: n0(dim*2)
+      real(8),intent(in) :: inmat(6,6)
+
+      integer :: i,j,k
+      real(8) :: x
+
+      n0 = 0.d0
+
+      j=0
+      do i=1,3,2
+        j=j+1
+        x = 0.d0
+        do k=1,6
+          x = x + inmat(i,k)**2
+          x = x + .5d0*(inmat(2,k)**2 + inmat(4,k)**2
+     &                      + inmat(5,k)**2 + inmat(6,k)**2)
+        end do
+        n0(j) = x/3.d0
+      end do
+
+      do i=1,2
+        j=j+1
+        x = 0.d0
+        do k=1,6
+!          x = x + dreal(inmat(6,k)*(inmat(5,k)+(-1.d0)**(i+1)*inmat(2,k)))
+!          x = x + dreal(inmat(4,k)*(inmat(5,k)+(-1.d0)**(i)*inmat(2,k)))
+          x = x + inmat(6,k)*(inmat(5,k)+(-1.d0)**(i+1)*inmat(2,k))
+          x = x + inmat(4,k)*(inmat(5,k)+(-1.d0)**(i)*inmat(2,k))
+        end do
+        n0(j) = x/(3.d0*dsqrt(2.d0))
+      end do
+
+      do i=1,2
+        j=j+1
+        x = 0.d0
+        do k=1,6
+!          x = x + dimag(inmat(6,k)*(inmat(5,k)+(-1.d0)**(i+1)*inmat(2,k)))
+!          x = x + dimag(inmat(4,k)*(inmat(5,k)+(-1.d0)**(i)*inmat(2,k)))
+          x = x + inmat(6,k)*(inmat(5,k)+(-1.d0)**(i+1)*inmat(2,k))
+          x = x + inmat(4,k)*(inmat(5,k)+(-1.d0)**(i)*inmat(2,k))
+        end do
+        n0(j) = 0.d0!/(3.d0*dsqrt(2.d0))
+      end do
+
+      do i=1,2
+        j=j+1
+        x = 0.d0
+        do k=1,6
+!          x = x + dimag(inmat(6,k)*(inmat(5,k)+(-1.d0)**(i+1)*inmat(2,k)))
+!          x = x + dimag(inmat(4,k)*(inmat(5,k)+(-1.d0)**(i)*inmat(2,k)))
+        x = x + inmat(4,k)**2 - inmat(6,k)**2
+        x = x + (inmat(2,k)*inmat(5,k)+inmat(2,k)*inmat(5,k))
+     &                                             *(-1.d0)**(i+1)
+        end do
+        n0(j) = x/(3.d0*2.d0)
+      end do
+
+
+
+      end subroutine intdens
+
+***************************************************************************
+
       subroutine hbuild(v,mat)
       implicit none
 
@@ -438,6 +486,11 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       real(8) :: v(dim*2), mat(dim,dim), wn(dim), dum
       real(8) :: work(lwork),vr(dim,dim),vl(dim,dim),test(sites,sites)
+
+***************************************************************************
+***   Solving the Schrodinger Eqn for our system through direct diagonalization
+***   of the Hamiltonian matrix.
+***************************************************************************
 
 C  Setting up noninteracting Hubbard-like system Hamiltonian with t as the
 C  hopping constant between lattice sites.
@@ -526,12 +579,111 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 
 ***************************************************************************
 
+      subroutine interHam(v,U,ham)
+      implicit none
+
+      real(8),intent(in) :: v(dim*2),U
+      real(8),intent(out) :: ham(6,6)
+      integer,parameter :: lwork=136
+
+      integer :: i,j,k,jj,info
+      real(8) :: wn(6),work(lwork),vr(6,6),vl(6,6)
+      real(8) :: dum
+      real(8) :: vec(3),Ba(2),Bb(2)
+
+      ham = 0.d0
+
+      do i=1,3
+        ham(i,i+1) = -dsqrt(2.d0)*t
+        ham(i+1,i) = ham(i,i+1)
+      end do
+
+      do i=1,2
+        Ba(i) = v(3) + v(5)*(-1.d0)**mod(i+1,2)
+        Bb(i) = v(4) + v(6)*(-1.d0)**mod(i+1,2)
+      end do
+
+      ham(1,1) = 2.d0*v(1) + U
+      ham(2,2) = V(1) + v(2)
+      ham(3,3) = 2.d0*v(2) + U
+
+      k = 0
+      do i=1,3,2
+        k = k + 1
+        vec(i) = (-1.d0)**(k)*Ba(k) + (-1.d0)**(k+1)*Bb(k)
+      end do
+
+!      vec(1) = -1.d0*Ba(1) + Bb(1)
+      vec(2) = v(7)-v(8)
+!      vec(3) = Ba(2) - Bb(2)
+
+      do j=1,3
+        ham(2,j) = vec(j)
+        ham(j+3,2) = vec(j)
+      end do
+
+      do i=4,6
+        do j=4,6
+          if (i.eq.j) then
+            do k=1,2
+              ham(i,j) = ham(i,j) + v(k)
+            end do
+            ham(i,j) = ham(i,j)
+     &                      + (v(7)+v(8))*(-1.d0)**(mod(i+1,3))
+          end if
+
+          ham(i,i+1) = Ba(2) + Bb(2)
+          ham(i+1,i) = Ba(1) + Bb(1)
+        end do
+      end do
+
+      ham(5,5) = ham(5,5) - 1.d0
+
+      call dgeev('n','v',6,ham,6,cn,wn,VL,6,VR,6
+     &                                   ,WORK,LWORK,INFO)
+
+*********************************************************************
+***     Sort the eigenvalues in ascending order
+*********************************************************************
+      do I=1,6
+        do J=i+1,6
+          if (cn(I).GE.cn(J)) THEN
+             DUM = cn(I)
+             cn(I) = cn(J)
+             cn(J) = DUM
+
+             DUM = Wn(I)
+             Wn(I) = Wn(J)
+             Wn(J) = DUM
+
+            do JJ=1,dim
+              DUM = VR(JJ,I)
+              VR(JJ,I) = VR(JJ,J)
+              VR(JJ,J) = DUM
+
+              DUM = VL(JJ,I)
+              VL(JJ,I) = VL(JJ,J)
+              VL(JJ,J) = DUM
+            end do
+          end if
+        end do
+      end do
+      ham = vr
+
+      end subroutine interHam
+
+***************************************************************************
       subroutine Pauli(sigma)
       implicit none
 
       integer :: i,j
       real(8), intent(out) :: sigma(spin*4,spin*4)
-
+***************************************************************************
+***   Subroutine Pauli generates the well-known Pauli spin matrices or the
+***   matrices forming the basis of the SU(2) space. The matrices are stored
+***   block-diagonally, with sigma_0 starting at [1,1]. All off block-diagonal
+***   elements are set to zero.
+***************************************************************************
       sigma = 0.d0
       do i=1,spin
         do j=1,spin
@@ -548,15 +700,12 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
       end subroutine Pauli
 
 ****************************************************************************
-
-
-****************************************************************************
 ****  Numerical Recipes subroutines and functions                       ****
 ****************************************************************************
         SUBROUTINE frprmn(p,n,ftol,iter,fret)
         INTEGER iter,n,NMAX,ITMAX
         REAL (8) :: fret,ftol,p(n),EPS
-        PARAMETER (NMAX=50,ITMAX=200,EPS=1.d-10)
+        PARAMETER (NMAX=50,ITMAX=500,EPS=1.d-10)
 cU    USES dfunc,func,linmin
         INTEGER its,j
         REAL (8) :: dgg,fp,gam,gg,g(NMAX),h(NMAX),xi(NMAX)

@@ -55,6 +55,8 @@ C  Calculating the difference integral between the target and current densities.
         integral = integral + (dens(i)-ntarget(i))**2
       end do
 
+      write(*,*) integral
+
       end function
 *************************************************************************
 C  Derivative subroutine of func.
@@ -79,13 +81,13 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       do num=1,dim
         do k=1,sites
           call dnvec(num,k,dn,vec)
-          write(*,*) 'k    =',k,'num    =', num
+!          write(*,*) 'k    =',k,'num    =', num
           x = 0.d0
           do j=1,dim*2
             x = x + (dens(j)-ntarget(j))*dn(j)
 
             if (num.eq.1.and.k.eq.2) then
-              write(*,*) 'dn  =', dn(j)
+!              write(*,*) 'dn  =', dn(j)
             end if
 
           end do
@@ -94,12 +96,12 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         end do
       end do
 
-      write(*,vector) dens
-      write(*,*) '^^^^^ dens ^^^^^'
+!      write(*,vector) dens
+!      write(*,*) '^^^^^ dens ^^^^^'
 
-      write(*,*) '***************************'
-      write(*,vector) dSdV
-      write(*,*) '^^^^^^^^^^^^ dSdV ^^^^^^^^^^^^'
+!      write(*,*) '***************************'
+!      write(*,vector) dSdV
+!      write(*,*) '^^^^^^^^^^^^ dSdV ^^^^^^^^^^^^'
 
       end subroutine
 
@@ -303,9 +305,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         dn(counter + j) = y
       end do
 
-      write(*,*) '*********************'
-      write(*,vector) dn
-      write(*,*) '^^^^^^^^ dn ^^^^^^^^^'
+!      write(*,*) '*********************'
+!      write(*,vector) dn
+!      write(*,*) '^^^^^^^^ dn ^^^^^^^^^'
 
 
       end subroutine dnvec
