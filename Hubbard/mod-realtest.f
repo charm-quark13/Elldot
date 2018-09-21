@@ -51,7 +51,11 @@ C  Recalculating the eigenvectors through exact diagonalization of the Hamiltoni
 C  Calculating the difference integral between the target and current densities.
       integral = 0.d0
       do i =1,dim*2
-        integral = integral + (dens(i)-ntarget(i))**2
+        if (i.ge.5.and.i.le.6) then
+          integral = integral + (dens(i)-ntarget(i))**2
+        else
+          integral = integral + (dens(i)-ntarget(i))**2
+        end if
       end do
 
       end function
@@ -179,9 +183,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &                          hmat(k+sites,beta)*hmat(k,alpha))
 
         elseif (num.eq.3) then
-          numer = 0.d0
-!          numer = hmat(m,beta)*(-hmat(k,beta)*hmat(k+sites,alpha)+
-!     &                          hmat(k+sites,beta)*hmat(k,alpha))*ione
+!          numer = 0.d0
+          numer = hmat(m,beta)*(-hmat(k,beta)*hmat(k+sites,alpha)+
+     &                          hmat(k+sites,beta)*hmat(k,alpha))
 
         else
           numer = hmat(m,beta)*(hmat(k,beta)*hmat(k,alpha) -
@@ -283,7 +287,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
           y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j,alpha) +
      &           hmat(j+sites,alpha)*vec(num,i+(j-1)*occ+alpha)
         end do
-        dn(counter + j) = 0.d0!ione*(x - y)
+        dn(counter + j) = x - y
       end do
 
 ***************************************************************************
@@ -355,6 +359,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         end do
       end do
 
+
+
       end subroutine densvec
 
 ****************************************************************************
@@ -411,7 +417,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       end subroutine spinmat
 
 ****************************************************************************
-
+!     Subroutine intdens calculates the density of the interacting 2-site
+!     Hubbard system.
+****************************************************************************
       subroutine intdens(n0,inmat)
       implicit none
 
@@ -453,7 +461,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
           x = x + inmat(6,k)*(inmat(5,k)+(-1.d0)**(i+1)*inmat(2,k))
           x = x + inmat(4,k)*(inmat(5,k)+(-1.d0)**(i)*inmat(2,k))
 
-          n0(j) = 0.d0!/(3.d0*dsqrt(2.d0)
+          n0(j) = n0(j) + x*2.d0/dsqrt(2.d0)!/(3.d0*dsqrt(2.d0)
         end do
 
         do i=1,2
@@ -649,7 +657,7 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 
 !      write(*,intprint) transpose(ham)
 !      write(*,*) '^^^^^ ham ^^^^^'
-!      call exit(-1)
+
 !      call ZGEEV('n','v',6, ham, 6, cn, VL, 6, VR, 6,
 !     &                             WORK, LWORK, RWORK, INFO )
 
@@ -659,6 +667,12 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 *********************************************************************
 ***     Sort the eigenvalues in ascending order
 *********************************************************************
+      write(*,intprint) transpose(vr)
+      write(*,*) '^^^^ real ham ^^^^'
+
+      write(*,vector) cn
+      write(*,*) '^^^ cn ^^^'
+
       do I=1,6
         do J=i+1,6
           if (cn(I).GE.cn(J)) THEN
@@ -707,7 +721,7 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
             sigma(i+3*spin,j+3*spin) = (-1.d0)**(i-1)
           else
             sigma(i+spin,j+spin) = 1.d0
-            !sigma(i+2*spin,j+2*spin) = 0.d0
+            sigma(i+2*spin,j+2*spin) = (-1.d0)**(i)
           end if
         end do
       end do

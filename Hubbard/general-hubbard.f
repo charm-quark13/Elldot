@@ -1,34 +1,35 @@
       Program Inversion
 C  Here I use a module to allow for the passing of global variables as well
 C  as portability of the code to future programs.
-      USE testCG
+      USE generalCG
 !      USE interactingHD
 
       Implicit none
 
       integer :: i,k,iter,it
 
-      real(8) :: ftol,fret,x
-      real(8) :: V(dim*2),h0(dim,dim),intn(dim*2),dens(dim*2)
-      real(8) :: vstart(dim*2),vhxc(2),bxc(6)
+      real(8) :: ftol,fret,x,u,v(dim*2),dens(dim*2)
       real(8) :: Bx(sites), By(sites), Bz(sites)
-      real(8) :: htest(6,6),u,tau1(3),tau2(3),txc1,txc2
+      real(8) :: txc1,txc2
+      real(8) :: vstart(dim*2),vhxc(2),bxc(6)
+      complex(8) :: htest(6,6)
+      real(8) :: tau1(3),tau2(3)
 
       write(matrix,'(a, i3, a)') '(', dim, 'f13.7)'
       write(matprint,'(a, i3, a)') '(', sites, 'e16.6)'
       write(vector,'(a, i3, a)') '(', 1, 'f16.10)'
-      write(intprint,'(a, i3, a)') '(', 8, 'e16.6)'
+      write(intprint,'(a, i3, a)') '(', 6, 'e16.6)'
 
       call Pauli(sig)
 
-      intn = 0.d0
+
       v = 0.d0
 
       Bx(1) = .0d0
-      Bx(2) = .0d0
+      Bx(2) = .40d0
 !      Bx = 0.d0
       By(1) = 0.d0
-      By(2) = .3d0
+      By(2) = 1.d0
       Bz(1) = .0d0
       Bz(2) = .4d0
 
@@ -63,9 +64,9 @@ C  as portability of the code to future programs.
       do it=10,10
 
         do i=1,sites
-          v(1) = 2.5d0
+          v(1) = 1.d0
           if (i.ne.1) then
-            v(i) = -2.5d0
+            v(i) = -1.d0
           end if
         end do
 
@@ -85,65 +86,10 @@ C  as portability of the code to future programs.
         call interHam(v,U,htest)
         call intdens(ntarget,htest)
 
-        write(*,vector) ntarget
-        write(*,*) '^^^^^ int_n ^^^^^'
-
-        h0 = 0.d0
-
-!        call hbuild(v,h0)
-!        call densvec(ntarget,h0)
-
-!        write(*,vector) ntarget
-!        write(*,*) '^^^^^ KS n ^^^^^'
-!        write(*,vector) En
-!        write(*,*) '^^^^^ KS En ^^^^^'
-
-!        phi = 0.d0
-
-***************************************************************************
-***   Creating the target spin-density vector which will be used in the
-***   optimization subroutine to find our Kohn-Sham potential.
-***************************************************************************
-
-!        call densvec(ntarget,h0)
-
-***   Using normalized density to our advantage to reduce the dimensionality of
-***   the problem, as we can simply calculate the density difference between
-***   sites. This means, we can choose to set either v(1) or v(2) to zero.
-
-!        write(*,vector) intn
-!        write(*,*) '^^^^^^^^^^^ ntarget ^^^^^^^^^^^^'
-!        do iter = 1,100
-!          x = -3.d0
-!          do i=1,sites
-!            v(1) = 0.d0
-!            if (i.ne.1) then
-!              v(i) = .5d0
-!            end if
-!          end do
-
-!          Bx(1) = -.125d0
-!          Bx(2) = .03d0
-!          Bx = 0.d0
-!          By = 0.d0
-
-!          Bz(1) = 0.d0
-!          Bz(2) = x
-
-!          do i=1,sites
-!            v(sites+i) = Bx(i)
-!            v(sites*2+i) = By(i)
-!            v(sites*3+i) = Bz(i)
-!          end do
-
 ***************************************************************************
 ***   Calling Numerical Recipes' conjugate gradient method optimiztion
 ***   subroutine.
 ***************************************************************************
-
-!        write(*,vector) v
-!        write(*,*) '^^^^^ v_test ^^^^^'
-        !call hbuild(v,hmat)
 
         call frprmn(v,dim*2,ftol,iter,fret)
 
@@ -153,8 +99,8 @@ C  as portability of the code to future programs.
 !        write(*,vector) v
 !        write(*,*) 'v_final', '^^^^^^^^^^^^^^^^^^^^^'
 
-        write(*,vector) ntarget
-        write(*,*) 'n_target ^^^^^^^^^^^^^^^^^^^^^^^'
+!        write(*,vector) ntarget
+!        write(*,*) 'n_target ^^^^^^^^^^^^^^^^^^^^^^^'
 
 ***   Final check to ensure ntarget is equivalent to the density found by our
 ***   conjugate gradient method.
@@ -163,10 +109,10 @@ C  as portability of the code to future programs.
 
         write(*,vector) dens
         write(*,*) '^^^^^ dens ^^^^^'
-        write(*,vector) v
-        write(*,*) '^^^^^ v_KS ^^^^^'
-        write(*,vector) vstart
-        write(*,*) '^^^^^^ v_start ^^^^^^'
+!        write(*,vector) v
+!        write(*,*) '^^^^^ v_KS ^^^^^'
+!        write(*,vector) vstart
+!        write(*,*) '^^^^^^ v_start ^^^^^^'
 
         vhxc = 0.d0
         do i=1,2
@@ -194,8 +140,8 @@ C  as portability of the code to future programs.
         txc1 = 0.d0
         txc2 = 0.d0
         do i=1,3
-          txc1 = txc1 + tau1(i)**2
-          txc2 = txc2 + tau2(i)**2
+          txc1 = txc1 + tau1(i)*tau1(i)
+          txc2 = txc2 + tau2(i)*tau2(i)
         end do
 
         txc1 = dsqrt(txc1)
