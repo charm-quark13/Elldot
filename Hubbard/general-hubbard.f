@@ -19,19 +19,19 @@ C  as portability of the code to future programs.
       write(matprint,'(a, i3, a)') '(', sites, 'e16.6)'
       write(vector,'(a, i3, a)') '(', 1, 'f16.10)'
       write(intprint,'(a, i3, a)') '(', 6, 'e16.6)'
+      write(dmat,'(a,i3,a)') '(', dim*2,'f14.10)'
 
       call Pauli(sig)
-
 
       v = 0.d0
 
       Bx(1) = .0d0
-      Bx(2) = .40d0
+      Bx(2) = .0d0
 !      Bx = 0.d0
       By(1) = 0.d0
       By(2) = 1.d0
       Bz(1) = .0d0
-      Bz(2) = .4d0
+      Bz(2) = .0d0
 
 ***************************************************************************
 ***   Setting the initial potentials which will generate our target density.
@@ -90,7 +90,7 @@ C  as portability of the code to future programs.
 ***   Calling Numerical Recipes' conjugate gradient method optimiztion
 ***   subroutine.
 ***************************************************************************
-
+        number = 0
         call frprmn(v,dim*2,ftol,iter,fret)
 
         write(*,*) '*********************************'
@@ -109,10 +109,19 @@ C  as portability of the code to future programs.
 
         write(*,vector) dens
         write(*,*) '^^^^^ dens ^^^^^'
-!        write(*,vector) v
-!        write(*,*) '^^^^^ v_KS ^^^^^'
+        write(*,vector) ntarget
+        write(*,*) '^^^^^ n_target ^^^^^'
+
 !        write(*,vector) vstart
 !        write(*,*) '^^^^^^ v_start ^^^^^^'
+
+        open(20,file='hamre.txt')
+        write(20,matrix) dreal(transpose(hmat))
+        close(20)
+
+        open(21,file='hamim.txt')
+        write(21,matrix) dimag(transpose(hmat))
+        close(21)
 
         vhxc = 0.d0
         do i=1,2

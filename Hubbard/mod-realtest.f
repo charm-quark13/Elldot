@@ -648,8 +648,10 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
      &                      + (v(7)+v(8))*(-1.d0)**(mod(i+1,3))
           end if
 
-          ham(i,i+1) = Ba(2) + Bb(2)
-          ham(i+1,i) = Ba(1) + Bb(1)
+          if (i.lt.6) then
+            ham(i,i+1) = Ba(2) + Bb(2)
+            ham(i+1,i) = Ba(1) + Bb(1)
+          end if
         end do
       end do
 
