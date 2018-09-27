@@ -27,8 +27,6 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
       integer :: i
       real(8) :: integral,v(dim*2),dens(dim*2)
 
-      number = number + 1
-
 ***   We can set one scalar potential to zero, as the difference between the
 ***   relative difference between the two potentials is all that matters.
 ***   Additionally, because of the nature of the Hubbard Dimer, we can set
@@ -79,6 +77,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       dens = 0.d0
       dn = zero
 
+      number = number + 1
+
 ***   Beginning of the loop to calculate the integral of dS/dV.
 ***   The subroutine dnvec generates the gradient vector of the density or
 ***   magnetization with respect to each potential on each site.
@@ -98,7 +98,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
           counter = counter + 1
 
-          write(*,*) x
+          !write(*,*) x
 
           dSdV(counter) = 2.d0*dreal(x)
         end do
@@ -107,10 +107,10 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   The derivative, dS/dV, will be all zeros when a minimum state of dens
 ***   has been reached (i.e.- when dens = ntarget).
 
-      write(*,vector) dSdV
-      write(*,*) '^^^^^^^^^^^^ dSdV ^^^^^^^^^^^^'
+      !write(*,vector) dSdV
+      !write(*,*) '^^^^^^^^^^^^ dSdV ^^^^^^^^^^^^'
 
-      if (num.eq.1) then
+      if (number.eq.1) then
         call exit(-1)
       end if
 
@@ -153,6 +153,14 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       write(21,dmat) transpose(dimag(mat))
       close(21)
 
+      open(22,file='energy.txt')
+      write(22,vector) dreal(en)
+      close(22)
+
+!      open(23,file='ienergy.txt')
+!      write(23,vector) dimag(en)
+!      close(23)
+
       end subroutine vmat
 
 ***************************************************************************
@@ -184,7 +192,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       m = l + j
 
       do beta = 1, dim
-        denom = En(alpha) - En(beta)
+        denom = dreal(En(alpha) - En(beta))
 
 ***   Carrying out perturbation theory multiplication, using potential
 ***   matrix and spinors gives:
@@ -198,7 +206,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         if (num.eq.1) then
           numer = hmat(m,beta)*(dconjg(hmat(k,beta))*hmat(k,alpha)+
      &                   dconjg(hmat(k+sites,beta))*hmat(k+sites,alpha))
-
+          if (num.eq.j.and.num.eq.k.and.k.eq.1.and.sigma.eq.1) then
+            write(*,*) 'numerator       ::::::',numer
+          endif
         elseif (num.eq.2) then
           numer = hmat(m,beta)
      &                *(dconjg(hmat(k,beta))*hmat(k+sites,alpha)+
@@ -230,6 +240,11 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         dp = dp + x
 
       end do
+
+      if (num.eq.j.and.num.eq.k.and.k.eq.1.and.sigma.eq.1) then
+        write(*,*) dp, 'alpha        :',alpha
+        write(*,vector) dreal(En)
+      end if
 
       end function
 
@@ -277,14 +292,14 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &           hmat(j+sites,alpha)
      &                      *dconjg(vec(num+4,i+(j-1)*occ+alpha))
 
-        if (num.eq.1.and.j.eq.1) then
-          write(*,*) 'x           :',x
-          write(*,*) 'y           :',y
-        end if
-
         end do
         dn(j) = x + y
       end do
+
+!      if (num.eq.1.and.j.eq.1) then
+        write(*,*) 'dn(1)           :',dn(1)
+        write(*,*) 'dn(2)           :',dn(2)
+!      end if
 
 ***************************************************************************
 ***   Solving the second magnetization (m_1)
@@ -396,8 +411,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       realn0 = dreal(n0)
 
-      write(*,*) n0(5)
-      write(*,*) n0(6)
+      !write(*,*) n0(5)
+      !write(*,*) n0(6)
 
       end subroutine densvec
 

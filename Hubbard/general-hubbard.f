@@ -115,14 +115,6 @@ C  as portability of the code to future programs.
 !        write(*,vector) vstart
 !        write(*,*) '^^^^^^ v_start ^^^^^^'
 
-        open(20,file='hamre.txt')
-        write(20,matrix) dreal(transpose(hmat))
-        close(20)
-
-        open(21,file='hamim.txt')
-        write(21,matrix) dimag(transpose(hmat))
-        close(21)
-
         vhxc = 0.d0
         do i=1,2
           vhxc(i) = v(i) - vstart(i)
