@@ -17,18 +17,17 @@ C  as portability of the code to future programs.
       write(matrix,'(a, i3, a)') '(', dim, 'f13.7)'
       write(matprint,'(a, i3, a)') '(', sites, 'e16.6)'
       write(vector,'(a, i3, a)') '(', 1, 'f16.10)'
-      write(intprint,'(a, i3, a)') '(', 8, 'e16.6)'
+      write(intprint,'(a, i3, a)') '(', 6, 'e16.6)'
 
       call Pauli(sig)
 
       intn = 0.d0
       v = 0.d0
 
-      Bx(1) = .0d0
+      Bx(1) = .4d0
       Bx(2) = .0d0
 !      Bx = 0.d0
-      By(1) = 0.d0
-      By(2) = .3d0
+      By = 0.d0
       Bz(1) = .0d0
       Bz(2) = .4d0
 
@@ -54,9 +53,6 @@ C  as portability of the code to future programs.
 
       vstart = v
 
-!      write(*,vector) v
-!      write(*,*) 'V0', '^^^^^^^^^^^^^^'
-
 ***************************************************************************
 ***   Solving the initial Schrodinger equation for our system via hbuild.
 ***************************************************************************
@@ -79,9 +75,6 @@ C  as portability of the code to future programs.
 
         ntarget = 0.d0
 
-!        write(*,vector) v
-!        write(*,*) '^^^^^ v ^^^^^'
-
         call interHam(v,U,htest)
         call intdens(ntarget,htest)
 
@@ -90,79 +83,33 @@ C  as portability of the code to future programs.
 
         h0 = 0.d0
 
-!        call hbuild(v,h0)
-!        call densvec(ntarget,h0)
-
-!        write(*,vector) ntarget
-!        write(*,*) '^^^^^ KS n ^^^^^'
-!        write(*,vector) En
-!        write(*,*) '^^^^^ KS En ^^^^^'
-
-!        phi = 0.d0
-
 ***************************************************************************
 ***   Creating the target spin-density vector which will be used in the
 ***   optimization subroutine to find our Kohn-Sham potential.
 ***************************************************************************
 
-!        call densvec(ntarget,h0)
 
 ***   Using normalized density to our advantage to reduce the dimensionality of
 ***   the problem, as we can simply calculate the density difference between
 ***   sites. This means, we can choose to set either v(1) or v(2) to zero.
-
-!        write(*,vector) intn
-!        write(*,*) '^^^^^^^^^^^ ntarget ^^^^^^^^^^^^'
-!        do iter = 1,100
-!          x = -3.d0
-!          do i=1,sites
-!            v(1) = 0.d0
-!            if (i.ne.1) then
-!              v(i) = .5d0
-!            end if
-!          end do
-
-!          Bx(1) = -.125d0
-!          Bx(2) = .03d0
-!          Bx = 0.d0
-!          By = 0.d0
-
-!          Bz(1) = 0.d0
-!          Bz(2) = x
-
-!          do i=1,sites
-!            v(sites+i) = Bx(i)
-!            v(sites*2+i) = By(i)
-!            v(sites*3+i) = Bz(i)
-!          end do
 
 ***************************************************************************
 ***   Calling Numerical Recipes' conjugate gradient method optimiztion
 ***   subroutine.
 ***************************************************************************
 
-!        write(*,vector) v
-!        write(*,*) '^^^^^ v_test ^^^^^'
-        !call hbuild(v,hmat)
 
         call frprmn(v,dim*2,ftol,iter,fret)
 
         write(*,*) '*********************************'
         write(*,*) iter, ftol, fret
 
-!        write(*,vector) v
-!        write(*,*) 'v_final', '^^^^^^^^^^^^^^^^^^^^^'
-
-        write(*,vector) ntarget
-        write(*,*) 'n_target ^^^^^^^^^^^^^^^^^^^^^^^'
 
 ***   Final check to ensure ntarget is equivalent to the density found by our
 ***   conjugate gradient method.
         call hbuild(v,hmat)
         call densvec(dens,hmat)
 
-        write(*,vector) dens
-        write(*,*) '^^^^^ dens ^^^^^'
         write(*,vector) v
         write(*,*) '^^^^^ v_KS ^^^^^'
         write(*,vector) vstart
@@ -206,7 +153,7 @@ C  as portability of the code to future programs.
         if (it.eq.1) then
           write(100,*) 'U','xc torque 1', 'xc torque 2'
         end if
-        write(100,*) u,txc1,-txc2
+        write(*,*) u,txc1,-txc2
 !        write(*,vector) tau1
 !        write(*,*) '******'
 !        write(*,vector) tau2

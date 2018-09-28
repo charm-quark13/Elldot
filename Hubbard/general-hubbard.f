@@ -6,7 +6,7 @@ C  as portability of the code to future programs.
 
       Implicit none
 
-      integer :: i,k,iter,it
+      integer :: i,j,k,iter,it
 
       real(8) :: ftol,fret,x,u,v(dim*2),dens(dim*2)
       real(8) :: Bx(sites), By(sites), Bz(sites)
@@ -49,6 +49,15 @@ C  as portability of the code to future programs.
         v(sites*3+i) = Bz(i)
       end do
 
+      call hbuild(v,hmat)
+
+!      do i=1,dim
+!        do j=1,dim
+!          write(*,*) hmat(i,j)*dconjg(hmat(i,j))
+!        end do
+!        write(*,*) '***'
+!      end do
+
 !      v(7) = 0.d0
 
       !vi=v
@@ -63,18 +72,18 @@ C  as portability of the code to future programs.
 ***************************************************************************
       do it=10,10
 
-        do i=1,sites
-          v(1) = 1.d0
-          if (i.ne.1) then
-            v(i) = -1.d0
-          end if
-        end do
+!        do i=1,sites
+!          v(1) = 1.d0
+!          if (i.ne.1) then
+!            v(i) = -1.d0
+!          end if
+!        end do
 
-        do i=1,sites
-          v(sites+i) = Bx(i)
-          v(sites*2+i) = By(i)
-          v(sites*3+i) = Bz(i)
-        end do
+!        do i=1,sites
+!          v(sites+i) = Bx(i)
+!          v(sites*2+i) = By(i)
+!          v(sites*3+i) = Bz(i)
+!        end do
 
         U = it/10.d0
 

@@ -7,8 +7,8 @@
       real(kind=8), parameter :: t=0.5d0
 
       integer :: number
-      real(8) :: ntarget(dim*2)
-      complex(8) :: hmat(dim,dim), cn(6), En(dim)
+      real(8) :: ntarget(dim*2),En(dim)
+      complex(8) :: hmat(dim,dim)
 !      real(8) :: tBx(sites), tBy(sites), tBz(sites)
       complex(8) :: sig(spin*4,spin*4)
       complex(8), parameter :: Zero = (0.d0,0.d0), One = (1.d0,0.d0)
@@ -52,7 +52,13 @@ C  Calculating the difference integral between the target and current densities.
       do i =1,dim*2
 !        integral = integral + dreal((dens(i)-ntarget(i))
 !     &                          *(conjg(dens(i)-ntarget(i))))
-        integral = integral + (dens(i)-ntarget(i))**2
+
+        if (i.eq.5.or.i.eq.6) then
+          integral = integral + dreal((dens(i)*ione-ntarget(i)*ione)*
+     &                    (dens(i)*(-ione)-ntarget(i)*(-ione)))
+        else
+          integral = integral + (dens(i)-ntarget(i))**2
+        end if
       end do
 
       end function
@@ -92,27 +98,26 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
             if (j.eq.5.or.j.eq.6) then
               x = x + (dens(j)*ione-ntarget(j)*ione)*dn(j)
             else
-              x = x + (dens(j)-ntarget(j))*dn(j)
+              x = x + (dens(j)*one-ntarget(j)*one)*dn(j)
             end if
+            write(*,*) x
           end do
 
           counter = counter + 1
 
-          !write(*,*) x
-
-          dSdV(counter) = 2.d0*dreal(x)
+          dSdV(counter) = 2.d0*(dreal(x))
         end do
       end do
 
 ***   The derivative, dS/dV, will be all zeros when a minimum state of dens
 ***   has been reached (i.e.- when dens = ntarget).
 
-      !write(*,vector) dSdV
-      !write(*,*) '^^^^^^^^^^^^ dSdV ^^^^^^^^^^^^'
+      write(*,vector) dSdV
+      write(*,*) '^^^^^^^^^^^^ dSdV ^^^^^^^^^^^^'
 
-      if (number.eq.1) then
-        call exit(-1)
-      end if
+!      if (number.eq.1) then
+!        call exit(-1)
+!      end if
 
       end subroutine
 
@@ -145,22 +150,6 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         end do
       end do
 
-      open(20,file='realdm.txt')
-      write(20,dmat) transpose(dreal(mat))
-      close(20)
-
-      open(21,file='imagdm.txt')
-      write(21,dmat) transpose(dimag(mat))
-      close(21)
-
-      open(22,file='energy.txt')
-      write(22,vector) dreal(en)
-      close(22)
-
-!      open(23,file='ienergy.txt')
-!      write(23,vector) dimag(en)
-!      close(23)
-
       end subroutine vmat
 
 ***************************************************************************
@@ -192,7 +181,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       m = l + j
 
       do beta = 1, dim
-        denom = dreal(En(alpha) - En(beta))
+        denom = En(alpha) - En(beta)
 
 ***   Carrying out perturbation theory multiplication, using potential
 ***   matrix and spinors gives:
@@ -206,9 +195,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         if (num.eq.1) then
           numer = hmat(m,beta)*(dconjg(hmat(k,beta))*hmat(k,alpha)+
      &                   dconjg(hmat(k+sites,beta))*hmat(k+sites,alpha))
-          if (num.eq.j.and.num.eq.k.and.k.eq.1.and.sigma.eq.1) then
-            write(*,*) 'numerator       ::::::',numer
-          endif
+
         elseif (num.eq.2) then
           numer = hmat(m,beta)
      &                *(dconjg(hmat(k,beta))*hmat(k+sites,alpha)+
@@ -241,10 +228,10 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       end do
 
-      if (num.eq.j.and.num.eq.k.and.k.eq.1.and.sigma.eq.1) then
-        write(*,*) dp, 'alpha        :',alpha
-        write(*,vector) dreal(En)
-      end if
+!      if (num.eq.j.and.num.eq.k.and.k.eq.1.and.sigma.eq.1) then
+!        write(*,*) dp, 'alpha        :',alpha
+!        write(*,vector) dreal(En)
+!      end if
 
       end function
 
@@ -297,8 +284,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       end do
 
 !      if (num.eq.1.and.j.eq.1) then
-        write(*,*) 'dn(1)           :',dn(1)
-        write(*,*) 'dn(2)           :',dn(2)
+!        write(*,*) 'dn(1)           :',dn(1)
+!        write(*,*) 'dn(2)           :',dn(2)
 !      end if
 
 ***************************************************************************
@@ -335,6 +322,12 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
      &           hmat(j+sites,alpha)*dconjg(vec(num,i+(j-1)*occ+alpha))
         end do
         dn(counter + j) = ione*(x - y)
+
+!        if ((counter+j).eq.5.or.(counter+j).eq.6) then
+!          write(*,*) vec(num,i+(j-1)*occ+alpha),j,k
+!          write(*,*) 'num:',num,'derivative:',i+(j-1)*occ+alpha
+!        end if
+
       end do
 
 ***************************************************************************
@@ -567,12 +560,12 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       subroutine hbuild(v,mat)
       implicit none
 
-      integer, parameter :: lwork=136
+      integer, parameter :: lwork=100
       integer :: i,j,jj,info
 
-      real(8) :: rwork(2*dim),v(2*dim)
-      complex(8) :: mat(dim,dim),dum,test(sites,sites),work(lwork)
-      complex(8) :: vr(dim,dim),vl(dim,dim)
+      real(8) :: rwork(100),v(2*dim)
+      complex(8) :: mat(dim,dim),test(sites,sites),work(lwork)
+!      complex(8) :: vr(dim,dim),vl(dim,dim),dum,dumv
 
 ***************************************************************************
 ***   Solving the Schrodinger Eqn for our system through direct diagonalization
@@ -584,16 +577,16 @@ C  hopping constant between lattice sites.
       do i=1,sites
         do j=1,sites
           if (i.eq.j) Then
-            test(i,j) = v(i) + v((dim-1)*2 + i)
+            test(i,j) = (v(i) + v((dim-1)*2 + i))*one
           elseif (abs(i-j).eq.1) Then
-            test(i,j) = -t
+            test(i,j) = -t*one
           else
             test(i,j) = zero
           endif
         end do
       end do
 
-      mat = 0.d0
+      mat = zero
 
       do i=1,sites
         do j=1,sites
@@ -604,11 +597,11 @@ C  hopping constant between lattice sites.
       do i=1,sites
         do j=1,sites
           if (i.eq.j) Then
-            test(i,j) = v(i) - v((dim-1)*2 + i)
+            test(i,j) = (v(i) - v((dim-1)*2 + i))*one
           elseif (abs(i-j).eq.1) Then
-            test(i,j) = -t
+            test(i,j) = -t*one
           else
-            test(i,j) = 0.d0
+            test(i,j) = zero
           endif
         end do
       end do
@@ -620,36 +613,39 @@ C  hopping constant between lattice sites.
       end do
 
       do i=1,sites
-        mat(i,dim/2+i) = v(sites+i)-ione*v(sites*2+i)
-        mat(dim/2+i,i) = v(sites+i)+ione*v(sites*2+i)
+        mat(i,dim/2+i) = v(sites+i)*one-ione*v(sites*2+i)
+        mat(dim/2+i,i) = v(sites+i)*one+ione*v(sites*2+i)
       end do
 
 C  Eigenvalue solver for a complex, non-symmetric matrix.
 
-      call ZGEEV('n','v', dim, mat, dim, En, vl, dim, vr, dim,
-     &                           WORK, LWORK, RWORK, INFO )
+      call ZHEEV('v','l', dim, mat, dim, en, work, lwork, rwork, info)
+
+!      call ZGEEV('n','v', dim, mat, dim, En, vl, dim, vr, dim,
+!     &                           WORK, LWORK, RWORK, INFO )
 *********************************************************************
 ***     Sort the eigenvalues in ascending order
 *********************************************************************
-      DO 51 I=1,dim
-        DO 52 J=i+1,dim
-          if (dreal(En(i)).GE.dreal(En(J))) then
-             DUM = En(I)
-             En(I) = En(J)
-             En(J) = DUM
+!      DO 51 I=1,dim
+!        DO 52 J=i+1,dim
+!          if (dreal(En(i)).GE.dreal(En(J))) then
+!             DUM = En(I)
+!             En(I) = En(J)
+!             En(J) = DUM
 
-             DO 53 JJ=1,dim
-                DUM = vr(JJ,I)
-                vr(JJ,I) = vr(JJ,J)
-                vr(JJ,J) = DUM
+!             DO 53 JJ=1,dim
+!                DUMv = vr(JJ,I)
+!                vr(JJ,I) = vr(JJ,J)
+!                vr(JJ,J) = DUMv
 
-53          CONTINUE
-          ENDIF
+!53          CONTINUE
 
-52      CONTINUE
-51    CONTINUE
+!          ENDIF
 
-      mat = vr
+!52      CONTINUE
+!51    CONTINUE
+
+!      mat = vr
 
       end subroutine hbuild
 
@@ -663,9 +659,9 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
       integer,parameter :: lwork=600
 
       integer :: i,j,k,jj,info
-      real(8) :: rwork(100)
+      real(8) :: rwork(100),cn(6)
       complex(8) :: work(lwork)
-      complex(8) :: dum,vl(6,6),vr(6,6),cn(6)
+!      complex(8) :: dum,vl(6,6),vr(6,6),cn(6)
       complex(8) :: vec(3),Ba(2),Bb(2)
 
       ham = zero
@@ -729,32 +725,30 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 
       ham(5,5) = ham(5,5) - (v(7)+v(8))
 
-      call ZGEEV('n','v',6, ham, 6, cn, vl, 6, vr, 6,
-     &                           WORK, LWORK, RWORK, INFO )
+!      call ZGEEV('n','v',6, ham, 6, cn, vl, 6, vr, 6,
+!     &                           WORK, LWORK, RWORK, INFO )
 
-!      call dgeev('n','v',6,ham,6,cn,wn,VL,6,VR,6
-!     &                                   ,WORK,LWORK,INFO)
-
+      call ZHEEV('v','l', 6, ham, 6, cn, work, lwork, rwork, info)
 *********************************************************************
 ***     Sort the eigenvalues in ascending order
 *********************************************************************
-      do I=1,6
-        do J=i+1,6
-          IF (dreal(cn(i)).GE.dreal(cn(J))) THEN
-             DUM = cn(I)
-             cn(I) = cn(J)
-             cn(J) = DUM
-
-            do JJ=1,6
-              DUM = vr(JJ,I)
-              vr(JJ,I) = vr(JJ,J)
-              vr(JJ,J) = DUM
-            end do
-          end if
-        end do
-      end do
-
-      ham = vr
+!      do I=1,6
+!        do J=i+1,6
+!          IF (dreal(cn(i)).GE.dreal(cn(J))) THEN
+!             DUM = cn(I)
+!             cn(I) = cn(J)
+!             cn(J) = DUM
+!
+!            do JJ=1,6
+!              DUM = vr(JJ,I)
+!              vr(JJ,I) = vr(JJ,J)
+!              vr(JJ,J) = DUM
+!            end do
+!          end if
+!        end do
+!      end do
+!
+!      ham = vr
 
       end subroutine interHam
 
