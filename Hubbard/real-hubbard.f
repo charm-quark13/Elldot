@@ -18,41 +18,23 @@ C  as portability of the code to future programs.
       write(matprint,'(a, i3, a)') '(', sites, 'e16.6)'
       write(vector,'(a, i3, a)') '(', 1, 'f16.10)'
       write(intprint,'(a, i3, a)') '(', 6, 'e16.6)'
+      write(dmat,'(a,i3,a)') '(', dim*2,'f14.10)'
 
       call Pauli(sig)
 
       intn = 0.d0
       v = 0.d0
 
-      Bx(1) = .4d0
-      Bx(2) = .0d0
+      Bx(1) = -2.5d0
+      Bx(2) = 1.0d0
 !      Bx = 0.d0
       By = 0.d0
       Bz(1) = .0d0
-      Bz(2) = .4d0
+      Bz(2) = .0d0
 
 ***************************************************************************
 ***   Setting the initial potentials which will generate our target density.
 ***************************************************************************
-      do i=1,sites
-        v(1) = 2.5d0
-        if (i.ne.1) then
-          v(i) = -2.5d0
-        end if
-      end do
-
-      do i=1,sites
-        v(sites+i) = Bx(i)
-        v(sites*2+i) = By(i)
-        v(sites*3+i) = Bz(i)
-      end do
-
-!      v(7) = 0.d0
-
-      !vi=v
-
-      vstart = v
-
 ***************************************************************************
 ***   Solving the initial Schrodinger equation for our system via hbuild.
 ***************************************************************************
@@ -78,8 +60,8 @@ C  as portability of the code to future programs.
         call interHam(v,U,htest)
         call intdens(ntarget,htest)
 
-        write(*,vector) ntarget
-        write(*,*) '^^^^^ int_n ^^^^^'
+!        write(*,vector) ntarget
+!        write(*,*) '^^^^^ int_n ^^^^^'
 
         h0 = 0.d0
 
@@ -110,10 +92,16 @@ C  as portability of the code to future programs.
         call hbuild(v,hmat)
         call densvec(dens,hmat)
 
-        write(*,vector) v
-        write(*,*) '^^^^^ v_KS ^^^^^'
-        write(*,vector) vstart
-        write(*,*) '^^^^^^ v_start ^^^^^^'
+        write(*,vector) ntarget
+        write(*,*) '^^^ n_target ^^^'
+
+        write(*,vector) dens
+        write(*,*) '^^^ n_KS ^^^'
+
+!        write(*,vector) v
+!        write(*,*) '^^^^^ v_KS ^^^^^'
+!        write(*,vector) vstart
+!        write(*,*) '^^^^^^ v_start ^^^^^^'
 
         vhxc = 0.d0
         do i=1,2
@@ -126,8 +114,8 @@ C  as portability of the code to future programs.
           bxc(i) = v(k) - vstart(k)
         end do
 
-        write(*,vector) bxc
-        write(*,*) '^^^^^^ Bxc ^^^^^^'
+!        write(*,vector) bxc
+!        write(*,*) '^^^^^^ Bxc ^^^^^^'
 
         tau1(1) = dens(5)*bxc(5) - dens(7)*bxc(3)
         tau1(2) = -(dens(3)*bxc(5)-dens(7)*bxc(1))

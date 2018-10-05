@@ -1,19 +1,20 @@
-      Module testCG
+      Module generalCG
 
       IMPLICIT NONE
 
-      integer,parameter :: spin=2, sites = 2, occ=2
-      integer, parameter :: dim=spin*sites
+      integer,parameter :: spin=2, sites = 3, occ=2
+      integer, parameter :: dim=spin*sites, intd=2*sites**2-sites
       real(kind=8), parameter :: t=0.5d0
 
       integer :: number
-      real(8) :: hmat(dim,dim), ntarget(dim*2), En(dim), cn(6)
-      real(8) :: tBx(sites), tBy(sites), tBz(sites)
-      real(8) :: sig(spin*4,spin*4)
-!      real (8), parameter :: Zero = (0.d0,0.d0), One = (1.d0,0.d0)
-!      real (8), parameter :: IOne = (0.d0,1.d0)
+      real(8) :: ntarget(dim*2),En(dim)
+      complex(8) :: hmat(dim,dim)
+!      real(8) :: tBx(sites), tBy(sites), tBz(sites)
+      complex(8) :: sig(spin*4,spin*4)
+      complex(8), parameter :: Zero = (0.d0,0.d0), One = (1.d0,0.d0)
+      complex(8), parameter :: IOne = (0.d0,1.d0)
 
-      character(20) :: intprint
+      character(20) :: intprint,dmat
       character (len=30) :: matrix, matprint, vector
 
       contains
@@ -23,10 +24,8 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
 !      function func(diffv) result(integral)
       function func(v) result(integral)
       implicit none
-      integer :: i
-      real(8) :: v(dim*2), integral, dens(dim*2)
-
-      number = number + 1
+      integer :: i,j
+      real(8) :: integral,v(dim*2),dens(dim*2)
 
 ***   We can set one scalar potential to zero, as the difference between the
 ***   relative difference between the two potentials is all that matters.
@@ -34,7 +33,7 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
 ***   one magnetic potential to zero, as the magnetizations of the two sites
 ***   must satisfy: |vec(m_1)| = |vec(m_2)|.
 
-      v(1) = 0.d0
+!      v(1) = 0.d0
       v(7) = 0.d0
 
 C  Recalculating the eigenvectors through exact diagonalization of the Hamiltonian.
@@ -44,6 +43,30 @@ C  Recalculating the eigenvectors through exact diagonalization of the Hamiltoni
 
       call densvec(dens,hmat)
 
+      if (number.eq.0) then
+        open(10,file='hmat-gen.txt')
+        write(10,matrix) dreal(hmat)
+        close(10)
+
+        open(50,file='gen-energy.txt')
+        write(50,vector) En
+        close(50)
+      end if
+
+!      do j=3,4
+!        hmat(:,j) = hmat(:,j)*(-1.d0)
+!      end do
+
+      do i=1,dim
+        do j=1,dim
+          if (dabs(dreal(hmat(i,j))).lt.1d-10) then
+            hmat(i,j) = dcmplx(0.d0,dimag(hmat(i,j)))
+          elseif (dabs(dimag(hmat(i,j))).lt.1d-10) then
+            hmat(i,j) = dcmplx(dreal(hmat(i,j)),0.d0)
+          end if
+        end do
+      end do
+
 ***   Using normalized density to our advantage to reduce the dimensionality of
 ***   the problem. This allows us to pin Bz(b) to zero. We can do the same with
 ***   the density, leading us to just the differene, or n(b) = 1 - n(a).
@@ -51,7 +74,15 @@ C  Recalculating the eigenvectors through exact diagonalization of the Hamiltoni
 C  Calculating the difference integral between the target and current densities.
       integral = 0.d0
       do i =1,dim*2
-        integral = integral + (dens(i)-ntarget(i))**2
+!        integral = integral + dreal((dens(i)-ntarget(i))
+!     &                          *(conjg(dens(i)-ntarget(i))))
+
+        if (i.eq.5.or.i.eq.6) then
+          integral = integral + dreal((dens(i)*ione-ntarget(i)*ione)*
+     &                    (dens(i)*(-ione)-ntarget(i)*(-ione)))
+        else
+          integral = integral + (dens(i)-ntarget(i))**2
+        end if
       end do
 
       end function
@@ -64,15 +95,18 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       implicit none
       integer :: j,k,counter,num
-      real(8) :: v(dim*2),x,dens(dim*2),dSdV(dim*2)
-      real(8) :: dn(dim*2)!, wfmat(spin,sites)
-      real(8) :: vec(8,(occ+sites)*sites)
+      real(8) :: v(dim*2),dens(dim*2),dSdV(dim*2)
+      complex(8) :: x
+      complex(8) :: dn(dim*2)!, wfmat(spin,sites)
+      complex(8) :: vec(8,(occ+sites)*sites)
 
       call vmat(vec)
       call densvec(dens,hmat)
 
       dSdV = 0.d0
-      dn = 0.d0
+      dn = zero
+
+      number = number + 1
 
 ***   Beginning of the loop to calculate the integral of dS/dV.
 ***   The subroutine dnvec generates the gradient vector of the density or
@@ -82,12 +116,19 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       do num=1,dim
         do k=1,sites
           call dnvec(num,k,dn,vec)
-          x = 0.d0
+          x = zero
           do j=1,dim*2
-            x = x + (dens(j)-ntarget(j))*dn(j)
+            if (j.eq.5.or.j.eq.6) then
+              x = x + (dens(j)*ione-ntarget(j)*ione)*dn(j)
+            else
+              x = x + dcmplx((dens(j)-ntarget(j))*dn(j))
+            end if
+!            write(*,*) x
           end do
+!          write(*,*)
           counter = counter + 1
-          dSdV(counter) = 2.d0*x
+
+          dSdV(counter) = 2.d0*(dreal(x)+dimag(x))
         end do
       end do
 
@@ -97,14 +138,18 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       write(*,vector) dSdV
       write(*,*) '^^^^^^^^^^^^ dSdV ^^^^^^^^^^^^'
 
+!      if (number.eq.1) then
+!        call exit(-1)
+!      end if
+
       end subroutine
 
 ***************************************************************************
       subroutine vmat(mat)
       implicit none
-      real(8),intent(out) :: mat(8,(occ+sites)*sites)
+      complex(8),intent(out) :: mat(8,(occ+sites)*sites)
       integer :: j,k,s,num,alpha,counter
-      real(8) :: x
+      complex(8) :: x
 
 ***   vmat generates a matrix containing the values of the derivatives of
 ***   psi_up and psi_dn for each occupied state with respect to each potential.
@@ -114,7 +159,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       counter = 0
       do k=1,sites
-        x = 0.d0
+        x = zero
         do j = 1,sites
           do alpha=1,2
             counter = counter + 1
@@ -137,8 +182,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       integer :: l,m,beta
       integer, intent(in) :: j,k,alpha,sigma,num
       !real(8), intent(in) :: v(dim*2)
-      real(8) :: numer, denom
-      real(8):: dp, x
+      real(8) :: denom
+      complex(8) :: numer
+      complex(8):: dp, x
 
 ***************************************************************************
 ***   The eigenvector is stored as (a_up,b_up,a_dn,b_dn). Then, l is a
@@ -148,7 +194,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   m is then a compound variable that encompasses spatial and
 ***   spin components.
 ***************************************************************************
-      dp = 0.d0
+      dp = zero
 
       if (sigma.eq.1) then
         l = 0
@@ -171,21 +217,24 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   Bxb=V(sites + 2), putting it in the second equation.)
 
         if (num.eq.1) then
-          numer = hmat(m,beta)*(hmat(k,beta)*hmat(k,alpha)+
-     &                          hmat(k+sites,beta)*hmat(k+sites,alpha))
+          numer = hmat(m,beta)*(dconjg(hmat(k,beta))*hmat(k,alpha)+
+     &                   dconjg(hmat(k+sites,beta))*hmat(k+sites,alpha))
 
         elseif (num.eq.2) then
-          numer = hmat(m,beta)*(hmat(k,beta)*hmat(k+sites,alpha)+
-     &                          hmat(k+sites,beta)*hmat(k,alpha))
+          numer = hmat(m,beta)
+     &                *(dconjg(hmat(k,beta))*hmat(k+sites,alpha)+
+     &                        dconjg(hmat(k+sites,beta))*hmat(k,alpha))
 
         elseif (num.eq.3) then
-          numer = 0.d0
-!          numer = hmat(m,beta)*(-hmat(k,beta)*hmat(k+sites,alpha)+
-!     &                          hmat(k+sites,beta)*hmat(k,alpha))*ione
+!          numer = 0.d0
+          numer = hmat(m,beta)
+     &           *(-dconjg(hmat(k,beta))*hmat(k+sites,alpha)+
+     &               dconjg(hmat(k+sites,beta))*hmat(k,alpha))*ione
 
         else
-          numer = hmat(m,beta)*(hmat(k,beta)*hmat(k,alpha) -
-     &                          hmat(k+sites,beta)*hmat(k+sites,alpha))
+          numer = hmat(m,beta)
+     &            *(dconjg(hmat(k,beta))*hmat(k,alpha) -
+     &                dconjg(hmat(k+sites,beta))*hmat(k+sites,alpha))
 
         end if
 
@@ -196,12 +245,25 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   The final line is the explicit summation over each value.
 
         if (alpha.eq.beta) then
-          x = 0.d0
+          x = zero
         end if
 
         dp = dp + x
 
+!        if (number.eq.1) then
+!          write(*,*)
+!     &         'n:', num-1, 'alpha:',alpha,'j:',j,'k:',k,'spin:',sigma
+!          write(*,*) 'numerator:',dreal(numer)
+!          write(*,*) 'denom:',denom
+!          write(*,*)
+!        end if
+
       end do
+
+!      if (number.eq.1) then
+!        write(*,vector) En
+!        write(*,*) '^^^ En ^^^'
+!      end if
 
       end function
 
@@ -211,9 +273,9 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       implicit none
 
       integer :: i,j,k,num,alpha,counter,dum
-      real(8) :: x,y
-      real(8),intent(in) :: vec(8,(occ+sites)*sites)
-      real(8),intent(out) :: dn(dim*2)
+      complex(8) :: x,y
+      complex(8),intent(in) :: vec(8,(occ+sites)*sites)
+      complex(8),intent(out) :: dn(dim*2)
 
 **************************************************************************
 ***   Subroutine calculating the magnetizations and densities of the system at
@@ -239,18 +301,24 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   d(m_0)/dV = x + y
 
       do j=1,sites
-        x = 0.d0
-        y = 0.d0
+        x = zero
+        y = zero
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j,alpha) +
-     &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
-          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
+          x = x + vec(num,i+(j-1)*occ+alpha)*dconjg(hmat(j,alpha)) +
+     &           hmat(j,alpha)*dconjg(vec(num,i+(j-1)*occ+alpha))
+          y = y + vec(num+4,i+(j-1)*occ+alpha)
+     &                      *dconjg(hmat(j+sites,alpha)) +
+     &           hmat(j+sites,alpha)
+     &                      *dconjg(vec(num+4,i+(j-1)*occ+alpha))
 
         end do
         dn(j) = x + y
       end do
 
+!      if (num.eq.1.and.j.eq.1) then
+!        write(*,*) 'dn(1)           :',dn(1)
+!        write(*,*) 'dn(2)           :',dn(2)
+!      end if
 
 ***************************************************************************
 ***   Solving the second magnetization (m_1)
@@ -258,13 +326,14 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       counter = sites
       do j=1,sites
-        x = 0.d0
-        y = 0.d0
+        x = zero
+        y = zero
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j,alpha)*vec(num+4,i+(j-1)*occ+alpha)
-          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j,alpha) +
-     &           hmat(j+sites,alpha)*vec(num,i+(j-1)*occ+alpha)
+          x = x + vec(num,i+(j-1)*occ+alpha)
+     &                     *dconjg(hmat(j+sites,alpha)) +
+     &           hmat(j,alpha)*dconjg(vec(num+4,i+(j-1)*occ+alpha))
+          y = y + vec(num+4,i+(j-1)*occ+alpha)*dconjg(hmat(j,alpha)) +
+     &           hmat(j+sites,alpha)*dconjg(vec(num,i+(j-1)*occ+alpha))
         end do
         dn(counter + j) = x + y
       end do
@@ -275,15 +344,22 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       counter = sites*2
       do j=1,sites
-        x = 0.d0
-        y = 0.d0
+        x = zero
+        y = zero
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j,alpha)*vec(num+4,i+(j-1)*occ+alpha)
-          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j,alpha) +
-     &           hmat(j+sites,alpha)*vec(num,i+(j-1)*occ+alpha)
+          x = x + vec(num,i+(j-1)*occ+alpha)
+     &                    *dconjg(hmat(j+sites,alpha)) +
+     &           hmat(j,alpha)*dconjg(vec(num+4,i+(j-1)*occ+alpha))
+          y = y + vec(num+4,i+(j-1)*occ+alpha)*dconjg(hmat(j,alpha)) +
+     &           hmat(j+sites,alpha)*dconjg(vec(num,i+(j-1)*occ+alpha))
         end do
-        dn(counter + j) = 0.d0!ione*(x - y)
+        dn(counter + j) = (x - y)*ione
+
+!        if ((counter+j).eq.5.or.(counter+j).eq.6) then
+!          write(*,*) vec(num,i+(j-1)*occ+alpha),j,k
+!          write(*,*) 'num:',num,'derivative:',i+(j-1)*occ+alpha
+!        end if
+
       end do
 
 ***************************************************************************
@@ -292,13 +368,15 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       counter = sites*3
       do j=1,sites
-        x = 0.d0
-        y = 0.d0
+        x = zero
+        y = zero
         do alpha = 1, 2
-          x = x + vec(num,i+(j-1)*occ+alpha)*hmat(j,alpha) +
-     &           hmat(j,alpha)*vec(num,i+(j-1)*occ+alpha)
-          y = y + vec(num+4,i+(j-1)*occ+alpha)*hmat(j+sites,alpha) +
-     &           hmat(j+sites,alpha)*vec(num+4,i+(j-1)*occ+alpha)
+          x = x + vec(num,i+(j-1)*occ+alpha)*dconjg(hmat(j,alpha)) +
+     &           hmat(j,alpha)*dconjg(vec(num,i+(j-1)*occ+alpha))
+          y = y + vec(num+4,i+(j-1)*occ+alpha)
+     &                    *dconjg(hmat(j+sites,alpha)) +
+     &           hmat(j+sites,alpha)
+     &                    *dconjg(vec(num+4,i+(j-1)*occ+alpha))
         end do
         dn(counter + j) = x - y
       end do
@@ -313,19 +391,20 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   (i.e. - n(1) = |a_up|^2, n(3) = a_up x a_down*, n(5) = |b_up|^2)
 ****************************************************************************
 
-      subroutine densvec(n0,h0)
+      subroutine densvec(realn0,h0)
       implicit none
 
-      real(8), intent(out) :: n0(dim*2)
-      real(8), intent(in) :: h0(dim,dim)
+      real(8), intent(out) :: realn0(dim*2)
+      complex(8) :: n0(dim*2)
+      complex(8), intent(in) :: h0(dim,dim)
       integer :: i,j,k,m
-      real(8) :: x
-      real(8) :: test(spin,spin)
-      real(8) :: sigma(spin,spin), dum(spin,spin)
+      complex(8) :: x
+      complex(8) :: test(spin,spin)
+      complex(8) :: sigma(spin,spin), dum(spin,spin)
 
-      test = 0.d0
+      test = zero
 
-      n0 = 0.d0
+      n0 = zero
 
       do i=1,sites
         call spinmat(i,occ,h0,test)
@@ -345,7 +424,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
           dum = matmul(sigma,test)
 
-          x = 0.d0
+          x = zero
           do j=1,spin
             x = x + dum(j,j)
           end do
@@ -355,14 +434,22 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
         end do
       end do
 
+      realn0 = dreal(n0)
+
+      !write(*,*) n0(5)
+      !write(*,*) n0(6)
+
       end subroutine densvec
 
 ****************************************************************************
       subroutine wfmatrix(nocc,psi,h0)
       implicit none
 
-      integer :: counter, i, j, nocc
-      real(8) :: psi(spin,sites), h0(dim,dim)
+      integer, intent(in) :: nocc
+      complex(8), intent(in) :: h0(dim,dim)
+      complex(8), intent(out) :: psi(spin,sites)
+
+      integer :: counter, i, j
 
 ****************************************************************************
 ***   Wavefunction matrix population subroutine.
@@ -384,26 +471,31 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ****************************************************************************
 
       subroutine spinmat(loc,nocc,ham,mat)
+      implicit none
+
       integer, intent(in) :: loc,nocc
-      real(8), intent(in) :: ham(dim,dim)
-      real(8), intent(inout) :: mat(spin,spin)
+      complex(8), intent(in) :: ham(dim,dim)
+      complex(8), intent(inout) :: mat(spin,spin)
+
       integer :: j,k,m
-      real(8) :: psi(spin,sites)
+      complex(8) :: psi(spin,sites)
 
 ***************************************************************************
 ***   Generating the spin density matrix for each lattice site for all occupied
 ***   states.
 ***************************************************************************
 
-      mat = 0.d0
+      mat = zero
       do m=1,nocc
         call wfmatrix(m,psi,ham)
         do j=1,spin
           do k=1,spin
-            mat(j,k) = mat(j,k) + psi(j,loc)*psi(k,loc)
-!            if (dabs(mat(j,k)).lt.1d-10) then
-!              mat(j,k) = 0.d0
-!            end if
+            mat(j,k) = mat(j,k) + psi(j,loc)*conjg(psi(k,loc))
+            if (dabs(dreal(mat(j,k))).lt.1d-10) then
+              mat(j,k) = complex(0.d0,dimag(mat(j,k)))
+            elseif (dabs(dimag(mat(j,k))).lt.1d-10) then
+              mat(j,k) = complex(dreal(mat(j,k)),0.d0)
+            end if
           end do
         end do
       end do
@@ -416,56 +508,82 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       implicit none
 
       real(8),intent(out) :: n0(dim*2)
-      real(8),intent(in) :: inmat(6,6)
+      complex(8),intent(in) :: inmat(6,6)
 
-      integer :: i,j,k
+      integer :: i,j
       real(8) :: x
 
       n0 = 0.d0
 
-      do k=1,1
-        j=0
-        do i=1,3,2
-          j=j+1
-          x = 0.d0
+      j=0
+      do i=1,3,2
+        j=j+1
+        x = 0.d0
+        x = x + dreal(inmat(i,1)*conjg(inmat(i,1)))
+        x = x + .5d0*dreal(inmat(2,1)*conjg(inmat(2,1))
+     &                 + inmat(4,1)*conjg(inmat(4,1))
+     &                      + inmat(5,1)*conjg(inmat(5,1))
+     &                         + inmat(6,1)*conjg(inmat(6,1)))
 
-            x = x + inmat(i,k)**2
-            x = x + .5d0*(inmat(2,k)**2 + inmat(4,k)**2
-     &                     + inmat(5,k)**2 + inmat(6,k)**2)
+!          x = x + inmat(k,i)**2
+!          x = x + .5d0*(inmat(k,2)**2 + inmat(k,4)**2
+!     &                     + inmat(k,5)**2 + inmat(k,6)**2)
 
-          n0(j) = n0(j) + x*2.d0
-        end do
+!          write(*,*) x/3.d0
 
-        do i=1,2
-          j=j+1
-          x = 0.d0
+        n0(j) = n0(j) + x*2.d0!/3.d0
+      end do
 
-          x = x + inmat(6,k)*(inmat(5,k)+(-1.d0)**(i+1)*inmat(2,k))
-          x = x + inmat(4,k)*(inmat(5,k)+(-1.d0)**(i)*inmat(2,k))
+      do i=1,2
+        j=j+1
+        x = 0.d0
+        x = x + dreal(conjg(inmat(6,1))*
+     &                  (inmat(5,1)+(-1.d0)**(i+1)*inmat(2,1)))
+     &        + dreal(inmat(4,1)*
+     &          (conjg(inmat(5,1))+(-1.d0)**(i)*conjg(inmat(2,1))))
+!        x = x + inmat(6,1)*(inmat(5,1)+(-1.d0)**(i+1)*inmat(2,1))
+!        x = x + inmat(4,1)*(inmat(5,1)+(-1.d0)**(i)*inmat(2,1))
 
-          n0(j) = n0(j) + x*2.d0/dsqrt(2.d0)
-        end do
+!        x = x + inmat(k,6)*(inmat(k,5)+(-1.d0)**(i+1)*inmat(k,2))
+!        x = x + inmat(k,4)*(inmat(k,5)+(-1.d0)**(i)*inmat(k,2))
 
-        do i=1,2
-          j=j+1
-          x = 0.d0
+        n0(j) = n0(j) + x*2.d0/dsqrt(2.d0)!/(3.d0*dsqrt(2.d0))
+      end do
 
-          x = x + inmat(6,k)*(inmat(5,k)+(-1.d0)**(i+1)*inmat(2,k))
-          x = x + inmat(4,k)*(inmat(5,k)+(-1.d0)**(i)*inmat(2,k))
+      do i=1,2
+        j=j+1
+        x = 0.d0
+        x = x + dimag(conjg(inmat(6,1))*
+     &                  (inmat(5,1)+(-1.d0)**(i+1)*inmat(2,1)))
+     &        + dimag(inmat(4,1)*
+     &          (conjg(inmat(5,1))+(-1.d0)**(i)*conjg(inmat(2,1))))
+!        x = x + inmat(6,1)*(inmat(5,1)+(-1.d0)**(i+1)*inmat(2,1))
+!        x = x + inmat(4,1)*(inmat(5,1)+(-1.d0)**(i)*inmat(2,1))
 
-          n0(j) = 0.d0!/(3.d0*dsqrt(2.d0)
-        end do
+!          x = x + inmat(k,6)*(inmat(k,5)+(-1.d0)**(i+1)*inmat(k,2))
+!          x = x + inmat(k,4)*(inmat(k,5)+(-1.d0)**(i)*inmat(k,2))
 
-        do i=1,2
-          j=j+1
-          x = 0.d0
+        n0(j) = n0(j) + x*2.d0/dsqrt(2.d0)
+      end do
 
-          x = x + inmat(4,k)**2 - inmat(6,k)**2
-          x = x + (inmat(2,k)*inmat(5,k)+inmat(2,k)*inmat(5,k))
+      do i=1,2
+        j=j+1
+        x = 0.d0
+        x = x + dreal(inmat(4,1)*conjg(inmat(4,1)) -
+     &                   inmat(6,1)*conjg(inmat(6,1)))
+     &        + dreal(inmat(2,1)*conjg(inmat(5,1))
+     &                      + conjg(inmat(2,1))*inmat(5,1))
      &                                             *(-1.d0)**(i+1)
 
-          n0(j) = n0(j) + x
-        end do
+!        x = x + inmat(4,k)**2 - inmat(6,k)**2
+!        x = x + (inmat(2,k)*inmat(5,k)+inmat(2,k)*inmat(5,k))
+!     &                                             *(-1.d0)**(i+1)
+
+!          x = x + inmat(k,4)**2 - inmat(k,6)**2
+!          x = x + (inmat(k,2)*inmat(k,5)+inmat(k,2)*inmat(k,5))
+!     &                                             *(-1.d0)**(i+1)
+
+        n0(j) = n0(j) + x!/(3.d0*2.d0)
       end do
 
       end subroutine intdens
@@ -475,32 +593,34 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       subroutine hbuild(v,mat)
       implicit none
 
-      integer, parameter :: lwork=136
+      integer, parameter :: lwork=100
       integer :: i,j,jj,info
 
-      real(8) :: v(dim*2), mat(dim,dim), wn(dim), dum
-      real(8) :: work(lwork),vr(dim,dim),vl(dim,dim),test(sites,sites)
+      real(8) :: rwork(100),v(2*dim)
+      complex(8) :: mat(dim,dim),test(sites,sites),work(lwork)
+!      complex(8) :: vr(dim,dim),vl(dim,dim),dum,dumv
 
 ***************************************************************************
 ***   Solving the Schrodinger Eqn for our system through direct diagonalization
 ***   of the Hamiltonian matrix.
 ***************************************************************************
 
+      mat = zero
+
 C  Setting up noninteracting Hubbard-like system Hamiltonian with t as the
 C  hopping constant between lattice sites.
       do i=1,sites
         do j=1,sites
           if (i.eq.j) Then
-            test(i,j) = v(i) + v((dim-1)*2 + i)
+            test(i,j) = dcmplx(v(i) + v((dim*2-sites) + i),0.d0)
+            write(*,*) (dim-1)*2+i,dim*2-sites+i
           elseif (abs(i-j).eq.1) Then
-            test(i,j) = -t
+            test(i,j) = dcmplx(-t,0.d0)
           else
-            test(i,j) = 0.d0
+            test(i,j) = zero
           endif
         end do
       end do
-
-      mat = 0.d0
 
       do i=1,sites
         do j=1,sites
@@ -511,11 +631,11 @@ C  hopping constant between lattice sites.
       do i=1,sites
         do j=1,sites
           if (i.eq.j) Then
-            test(i,j) = v(i) - v((dim-1)*2 + i)
+            test(i,j) = dcmplx(v(i) - v((dim*2-sites) + i),0.d0)
           elseif (abs(i-j).eq.1) Then
-            test(i,j) = -t
+            test(i,j) = dcmplx(-t,0.d0)
           else
-            test(i,j) = 0.d0
+            test(i,j) = zero
           endif
         end do
       end do
@@ -527,49 +647,34 @@ C  hopping constant between lattice sites.
       end do
 
       do i=1,sites
-        mat(i,dim/2+i) = v(sites+i)
-        mat(dim/2+i,i) = v(sites+i)
+        mat(i,dim/2+i) = dcmplx(v(sites+i),-v(sites*2+i))
+        mat(dim/2+i,i) = dcmplx(v(sites+i),v(sites*2+i))
       end do
 
+      do i=1,dim
+        do j=1,dim
+          if (dabs(dreal(mat(i,j))).lt.1d-10) then
+            mat(i,j) = dcmplx(0.d0,dimag(mat(i,j)))
+          elseif(dabs(dimag(mat(i,j))).lt.1d-10) then
+            mat(i,j) = dcmplx(dreal(mat(i,j)),0.d0)
+          end if
+        end do
+      end do
 C  Eigenvalue solver for a complex, non-symmetric matrix.
 
-!      write(*,matrix) transpose(mat)
-!      write(*,*) '^^^^^ KS Ham ^^^^^'
-!      call CGEEV('n','v',dim, mat, dim, En, VL, dim, VR, dim,
-!     &                             WORK, LWORK, RWORK, INFO )
+      call ZHEEV('v','l', dim, mat, dim, en, work, lwork, rwork, info)
 
-      call dgeev('n','v',dim,mat,dim,En,wn,VL,dim,VR,dim
-     &                                   ,WORK,LWORK,INFO)
-
+!      call ZGEEV('n','v', dim, mat, dim, En, vl, dim, vr, dim,
+!     &                           WORK, LWORK, RWORK, INFO )
 *********************************************************************
 ***     Sort the eigenvalues in ascending order
 *********************************************************************
-      DO 51 I=1,dim
-        DO 52 J=i+1,dim
-            IF (En(I).GE.En(J)) THEN
-               DUM = En(I)
-               En(I) = En(J)
-               En(J) = DUM
 
-               DUM = Wn(I)
-               Wn(I) = Wn(J)
-               Wn(J) = DUM
-
-               DO 53 JJ=1,dim
-                  DUM = VR(JJ,I)
-                  VR(JJ,I) = VR(JJ,J)
-                  VR(JJ,J) = DUM
-
-                  DUM = VL(JJ,I)
-                  VL(JJ,I) = VL(JJ,J)
-                  VL(JJ,J) = DUM
-53             CONTINUE
-
-            ENDIF
-52       CONTINUE
-51    CONTINUE
-
-      mat = vr
+      if (number.eq.0) then
+        write(*,*)
+        write(*,matrix) dreal(transpose(mat))
+        write(*,*)
+      end if
 
       end subroutine hbuild
 
@@ -578,27 +683,26 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
       subroutine interHam(v,U,ham)
       implicit none
 
-      real(8), intent(in) :: U
-      real(8),intent(in) :: v(dim*2)
-      real(8),intent(out) :: ham(6,6)
-      integer,parameter :: lwork=500
+      real(8), intent(in) :: U, v(dim*2)
+      complex(8),intent(out) :: ham(intd,intd)
+      integer,parameter :: lwork=600
 
       integer :: i,j,k,jj,info
-!      real(8) :: rwork(12)
-      real(8) :: wn(6),work(lwork),vr(6,6),vl(6,6)
-      real(8) :: dum
-      real(8) :: vec(3),Ba(2),Bb(2)
+      real(8) :: rwork(100),cn(intd)
+      complex(8) :: work(lwork)
+!      complex(8) :: dum,vl(6,6),vr(6,6),cn(6)
+      complex(8) :: vec(3),Bp(sites),Bm(sites)
 
-      ham = 0.d0
+      ham = zero
 
       do i=1,2
         ham(i,i+1) = -dsqrt(2.d0)*t
         ham(i+1,i) = -dsqrt(2.d0)*t
       end do
 
-      do i=1,2
-        Ba(i) = (v(3) + v(5)*(-1.d0)**(i+1))/dsqrt(2.d0)
-        Bb(i) = (v(4) + v(6)*(-1.d0)**(i+1))/dsqrt(2.d0)
+      do i=1,sites
+        Bp(i) = (v(sites+i)+ione*v(sites*2+i))/dsqrt(2.d0)
+        Bm(i) = (v(sites+i)-ione*v(sites*2+i))/dsqrt(2.d0)
       end do
 
       ham(1,1) = 2.d0*v(1) + U
@@ -640,50 +744,40 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
      &                      + (v(7)+v(8))*(-1.d0)**(mod(i+1,3))
           end if
 
-          ham(i,i+1) = Ba(2) + Bb(2)
-          ham(i+1,i) = Ba(1) + Bb(1)
         end do
+      end do
+
+      do i=4,5
+        ham(i,i+1) = Ba(2) + Bb(2)
+        ham(i+1,i) = Ba(1) + Bb(1)
       end do
 
       ham(5,5) = ham(5,5) - (v(7)+v(8))
 
-!      write(*,intprint) transpose(ham)
-!      write(*,*) '^^^^^ ham ^^^^^'
-!      call exit(-1)
-!      call ZGEEV('n','v',6, ham, 6, cn, VL, 6, VR, 6,
-!     &                             WORK, LWORK, RWORK, INFO )
+!      call ZGEEV('n','v',6, ham, 6, cn, vl, 6, vr, 6,
+!     &                           WORK, LWORK, RWORK, INFO )
 
-      call dgeev('n','v',6,ham,6,cn,wn,VL,6,VR,6
-     &                                   ,WORK,LWORK,INFO)
-
+      call ZHEEV('v','l', 6, ham, 6, cn, work, lwork, rwork, info)
 *********************************************************************
 ***     Sort the eigenvalues in ascending order
 *********************************************************************
-      do I=1,6
-        do J=i+1,6
-          if (cn(I).GE.cn(J)) THEN
-             DUM = cn(I)
-             cn(I) = cn(J)
-             cn(J) = DUM
-
-             DUM = Wn(I)
-             Wn(I) = Wn(J)
-             Wn(J) = DUM
-
-            do JJ=1,6
-              DUM = VR(JJ,I)
-              VR(JJ,I) = VR(JJ,J)
-              VR(JJ,J) = DUM
-
-              DUM = VL(JJ,I)
-              VL(JJ,I) = VL(JJ,J)
-              VL(JJ,J) = DUM
-            end do
-          end if
-        end do
-      end do
-
-      ham = vr
+!      do I=1,6
+!        do J=i+1,6
+!          IF (dreal(cn(i)).GE.dreal(cn(J))) THEN
+!             DUM = cn(I)
+!             cn(I) = cn(J)
+!             cn(J) = DUM
+!
+!            do JJ=1,6
+!              DUM = vr(JJ,I)
+!              vr(JJ,I) = vr(JJ,J)
+!              vr(JJ,J) = DUM
+!            end do
+!          end if
+!        end do
+!      end do
+!
+!      ham = vr
 
       end subroutine interHam
 
@@ -692,22 +786,22 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
       implicit none
 
       integer :: i,j
-      real(8), intent(out) :: sigma(spin*4,spin*4)
+      complex(8), intent(out) :: sigma(spin*4,spin*4)
 ***************************************************************************
 ***   Subroutine Pauli generates the well-known Pauli spin matrices or the
 ***   matrices forming the basis of the SU(2) space. The matrices are stored
 ***   block-diagonally, with sigma_0 starting at [1,1]. All off block-diagonal
 ***   elements are set to zero.
 ***************************************************************************
-      sigma = 0.d0
+      sigma = zero
       do i=1,spin
         do j=1,spin
           if (i.eq.j) then
-            sigma(i,j) = 1.d0
-            sigma(i+3*spin,j+3*spin) = (-1.d0)**(i-1)
+            sigma(i,j) = one
+            sigma(i+3*spin,j+3*spin) = (-one)**(i-1)
           else
-            sigma(i+spin,j+spin) = 1.d0
-            !sigma(i+2*spin,j+2*spin) = 0.d0
+            sigma(i+spin,j+spin) = one
+            sigma(i+2*spin,j+2*spin) = ione*(-1.d0)**(i)
           end if
         end do
       end do
@@ -720,7 +814,7 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
         SUBROUTINE frprmn(p,n,ftol,iter,fret)
         INTEGER iter,n,NMAX,ITMAX
         REAL (8) :: fret,ftol,p(n),EPS
-        PARAMETER (NMAX=50,ITMAX=100000,EPS=1.d-8)
+        PARAMETER (NMAX=50,ITMAX=100000,EPS=1.d-12)
 cU    USES dfunc,func,linmin
         INTEGER its,j
         REAL (8) :: dgg,fp,gam,gg,g(NMAX),h(NMAX),xi(NMAX)
@@ -736,7 +830,7 @@ cU    USES dfunc,func,linmin
         do 14 its=1,ITMAX
           iter=its
           call linmin(p,xi,n,fret)
-          if(2.d0*abs(fret-fp).le.ftol*(abs(fret)+abs(fp)+EPS))return
+          if(2.d0*dabs(fret-fp).le.ftol*(dabs(fret)+dabs(fp)+EPS))return
           fp=func(p)
           call dfunc(p,xi)
           gg=0.d0
@@ -822,7 +916,8 @@ C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
 1     if(fb.ge.fc)then
           r=(bx-ax)*(fb-fc)
           q=(bx-cx)*(fb-fa)
-          u=bx-((bx-cx)*q-(bx-ax)*r)/(2.d0*sign(max(abs(q-r),TINY),q-r))
+          u=bx-((bx-cx)*q-(bx-ax)*r)
+     &                      /(2.d0*sign(max(dabs(q-r),TINY),q-r))
           ulim=bx+GLIMIT*(cx-bx)
           if((bx-u)*(u-cx).gt.0.d0)then
             fu=func(u)
@@ -911,7 +1006,7 @@ C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
             e=b-x
           endif
           d=CGOLD*e
-2       if(abs(d).ge.tol1) then
+2       if(dabs(d).ge.tol1) then
             u=x+d
           else
             u=x+sign(tol1,d)
@@ -978,10 +1073,10 @@ C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
       dw=dx
       do 11 iter=1,ITMAX
         xm=0.5d0*(a+b)
-        tol1=tol*abs(x)+ZEPS
+        tol1=tol*dabs(x)+ZEPS
         tol2=2.d0*tol1
-        if(abs(x-xm).le.(tol2-.5d0*(b-a))) goto 3
-        if(abs(e).gt.tol1) then
+        if(dabs(x-xm).le.(tol2-.5d0*(b-a))) goto 3
+        if(dabs(e).gt.tol1) then
           d1=2.d0*(b-a)
           d2=d1
           if(dw.ne.dx) d1=(w-x)*dx/(dx-dw)
@@ -995,7 +1090,7 @@ C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
           if(.not.(ok1.or.ok2))then
             goto 1
           else if (ok1.and.ok2)then
-            if(abs(d1).lt.abs(d2))then
+            if(dabs(d1).lt.dabs(d2))then
               d=d1
             else
               d=d2
@@ -1005,7 +1100,7 @@ C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
           else
             d=d2
           endif
-          if(abs(d).gt.abs(0.5d0*olde))goto 1
+          if(dabs(d).gt.dabs(0.5d0*olde))goto 1
           u=x+d
           if(u-a.lt.tol2 .or. b-u.lt.tol2) d=sign(tol1,xm-x)
           goto 2
@@ -1016,7 +1111,7 @@ C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
           e=b-x
         endif
         d=0.5d0*e
-2       if(abs(d).ge.tol1) then
+2       if(dabs(d).ge.tol1) then
           u=x+d
           fu=f(u)
         else

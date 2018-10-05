@@ -15,7 +15,7 @@ C  as portability of the code to future programs.
       complex(8) :: htest(6,6)
       real(8) :: tau1(3),tau2(3)
 
-      write(matrix,'(a, i3, a)') '(', dim, 'f13.7)'
+      write(matrix,'(a, i3, a)') '(', dim, 'f14.8)'
       write(matprint,'(a, i3, a)') '(', sites, 'e16.6)'
       write(vector,'(a, i3, a)') '(', 1, 'f16.10)'
       write(intprint,'(a, i3, a)') '(', 6, 'e16.6)'
@@ -24,12 +24,15 @@ C  as portability of the code to future programs.
       call Pauli(sig)
 
       v = 0.d0
+      Bx = 0.d0
+      by = 0.d0
+      bz = 0.d0
 
-      Bx(1) = .0d0
-      Bx(2) = .0d0
+      Bx(1) = -2.5d0
+      Bx(2) = 1.0d0
 !      Bx = 0.d0
-      By(1) = 0.d0
-      By(2) = 1.d0
+!      By(1) = .0d0
+      By(2) = .75d0
       Bz(1) = .0d0
       Bz(2) = .0d0
 
@@ -49,7 +52,7 @@ C  as portability of the code to future programs.
         v(sites*3+i) = Bz(i)
       end do
 
-      call hbuild(v,hmat)
+!      call hbuild(v,hmat)
 
 !      do i=1,dim
 !        do j=1,dim
@@ -135,8 +138,8 @@ C  as portability of the code to future programs.
           bxc(i) = v(k) - vstart(k)
         end do
 
-        write(*,vector) bxc
-        write(*,*) '^^^^^^ Bxc ^^^^^^'
+!        write(*,vector) bxc
+!        write(*,*) '^^^^^^ Bxc ^^^^^^'
 
         tau1(1) = dens(5)*bxc(5) - dens(7)*bxc(3)
         tau1(2) = -(dens(3)*bxc(5)-dens(7)*bxc(1))
