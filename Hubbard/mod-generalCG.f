@@ -98,7 +98,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       real(8) :: v(dim*2),dens(dim*2),dSdV(dim*2)
       complex(8) :: x
       complex(8) :: dn(dim*2)!, wfmat(spin,sites)
-      complex(8) :: vec(8,(occ+sites)*sites)
+      complex(8) :: vec(8,occ*sites**2)
 
       call vmat(vec)
       call densvec(dens,hmat)
@@ -113,7 +113,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   magnetization with respect to each potential on each site.
 
       counter = 0
-      do num=1,dim
+      do num=1,4
         do k=1,sites
           call dnvec(num,k,dn,vec)
           x = zero
@@ -147,7 +147,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***************************************************************************
       subroutine vmat(mat)
       implicit none
-      complex(8),intent(out) :: mat(8,(occ+sites)*sites)
+      complex(8),intent(out) :: mat(8,(occ*sites**2))
       integer :: j,k,s,num,alpha,counter
       complex(8) :: x
 
@@ -164,8 +164,8 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
           do alpha=1,2
             counter = counter + 1
             do s=1,2
-              do num=1,dim
-                mat(dim*(s-1)+num,counter) =
+              do num=1,4
+                mat(4*(s-1)+num,counter) =
      &                      derivative(alpha,j,k,num,s)
               end do
             end do
@@ -250,20 +250,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
         dp = dp + x
 
-!        if (number.eq.1) then
-!          write(*,*)
-!     &         'n:', num-1, 'alpha:',alpha,'j:',j,'k:',k,'spin:',sigma
-!          write(*,*) 'numerator:',dreal(numer)
-!          write(*,*) 'denom:',denom
-!          write(*,*)
-!        end if
-
       end do
-
-!      if (number.eq.1) then
-!        write(*,vector) En
-!        write(*,*) '^^^ En ^^^'
-!      end if
 
       end function
 
@@ -274,7 +261,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 
       integer :: i,j,k,num,alpha,counter,dum
       complex(8) :: x,y
-      complex(8),intent(in) :: vec(8,(occ+sites)*sites)
+      complex(8),intent(in) :: vec(8,occ*sites**2)
       complex(8),intent(out) :: dn(dim*2)
 
 **************************************************************************
@@ -508,82 +495,157 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
       implicit none
 
       real(8),intent(out) :: n0(dim*2)
-      complex(8),intent(in) :: inmat(6,6)
+      complex(8),intent(in) :: inmat(intd,intd)
 
-      integer :: i,j
-      real(8) :: x
+      integer :: i,ii,j,jj,k,kk,nsng,ntrp,x,y,z
+      real(8) :: r
+      real(8) :: mx(sites),my(sites),mz(sites),n(sites)
+      complex(8) :: coef(intd),phi(sites,sites),nud(sites)
 
       n0 = 0.d0
+      n = 0.d0
+      mx = 0.d0
+      my = 0.d0
+      mz = 0.d0
+      nud = zero
 
-      j=0
-      do i=1,3,2
-        j=j+1
-        x = 0.d0
-        x = x + dreal(inmat(i,1)*conjg(inmat(i,1)))
-        x = x + .5d0*dreal(inmat(2,1)*conjg(inmat(2,1))
-     &                 + inmat(4,1)*conjg(inmat(4,1))
-     &                      + inmat(5,1)*conjg(inmat(5,1))
-     &                         + inmat(6,1)*conjg(inmat(6,1)))
+      x = sites
+      y = sites*2
+      z = sites*3
 
-!          x = x + inmat(k,i)**2
-!          x = x + .5d0*(inmat(k,2)**2 + inmat(k,4)**2
-!     &                     + inmat(k,5)**2 + inmat(k,6)**2)
-
-!          write(*,*) x/3.d0
-
-        n0(j) = n0(j) + x*2.d0!/3.d0
+      do i=1,intd
+        coef(i) = inmat(i,1)
       end do
 
-      do i=1,2
-        j=j+1
-        x = 0.d0
-        x = x + dreal(conjg(inmat(6,1))*
-     &                  (inmat(5,1)+(-1.d0)**(i+1)*inmat(2,1)))
-     &        + dreal(inmat(4,1)*
-     &          (conjg(inmat(5,1))+(-1.d0)**(i)*conjg(inmat(2,1))))
-!        x = x + inmat(6,1)*(inmat(5,1)+(-1.d0)**(i+1)*inmat(2,1))
-!        x = x + inmat(4,1)*(inmat(5,1)+(-1.d0)**(i)*inmat(2,1))
-
-!        x = x + inmat(k,6)*(inmat(k,5)+(-1.d0)**(i+1)*inmat(k,2))
-!        x = x + inmat(k,4)*(inmat(k,5)+(-1.d0)**(i)*inmat(k,2))
-
-        n0(j) = n0(j) + x*2.d0/dsqrt(2.d0)!/(3.d0*dsqrt(2.d0))
+      DO I=1,sites
+        DO J=1,sites
+          IF (I.EQ.J) then
+            PHI(I,J) = 1.D0
+          else
+            phi(i,j) = 0.d0
+          end if
+        end do
       end do
 
-      do i=1,2
-        j=j+1
-        x = 0.d0
-        x = x + dimag(conjg(inmat(6,1))*
-     &                  (inmat(5,1)+(-1.d0)**(i+1)*inmat(2,1)))
-     &        + dimag(inmat(4,1)*
-     &          (conjg(inmat(5,1))+(-1.d0)**(i)*conjg(inmat(2,1))))
-!        x = x + inmat(6,1)*(inmat(5,1)+(-1.d0)**(i+1)*inmat(2,1))
-!        x = x + inmat(4,1)*(inmat(5,1)+(-1.d0)**(i)*inmat(2,1))
+      NSng = sites*(sites+1)/2
+      NTrp = 3*sites*(sites-1)/2
 
-!          x = x + inmat(k,6)*(inmat(k,5)+(-1.d0)**(i+1)*inmat(k,2))
-!          x = x + inmat(k,4)*(inmat(k,5)+(-1.d0)**(i)*inmat(k,2))
+      DO I=1,sites
+C**------------------------------------------------------------
+C**   Singlet block contributions to N
+C**------------------------------------------------------------
+        N(I) = 0.D0
 
-        n0(j) = n0(j) + x*2.d0/dsqrt(2.d0)
+        II = -sites
+        DO J=1,sites
+          II = II + sites+2-J
+          N(I) = N(I) + dreal(PHI(J,I)*CDABS(Coef(II))**2 )
+        end do
+
+        II = -sites
+        DO J=1,sites-1
+          II = II + sites+2-J
+          DO K=1,sites-J
+            JJ = II + K
+            N(I) = N(I)+0.5D0*
+     &             dreal((PHI(J,I)+PHI(J+K,I))*CDABS(Coef(JJ))**2)
+          end do
+        end do
+C**------------------------------------------------------------
+C**   Triplet block contributions to N
+C**------------------------------------------------------------
+
+        JJ = NSng-2
+        DO J=1,sites-1
+          DO K=1,sites-J
+            JJ = JJ+3
+            N(I) = N(I)+0.5D0* dreal(
+     &                  (PHI(J,I)+PHI(J+K,I))*(CDABS(Coef(JJ))**2
+     &                 + CDABS(Coef(JJ+1))**2+CDABS(Coef(JJ+2))**2)
+     &                          )
+          end do
+        end do
+C**------------------------------------------------------------
+C**   Triplet block contributions to MZ
+C**------------------------------------------------------------
+
+        JJ = nsng-2
+        DO J=1,sites-1
+          DO K=1,sites-J
+            JJ = JJ+3
+            MZ(I) = MZ(I)+0.5D0*dreal(
+     &                      (PHI(J,I)+PHI(J+K,I))
+     &            *(CDABS(Coef(JJ))**2 - CDABS(Coef(JJ+2))**2)
+     &                            )
+          end do
+        end do
+C**------------------------------------------------------------
+C**   Singlet-Triplet block contributions to MZ
+C**------------------------------------------------------------
+
+        II = -sites
+        KK = NSng-1
+        DO J=1,sites-1
+          II = II + sites+2-J
+          DO K=1,sites-J
+            JJ = II+K
+            KK = KK+3
+            MZ(I) = MZ(I)+0.5D0* dreal(
+     &              (PHI(J,I)-PHI(J+K,I))
+     &        *(Coef(JJ)*DCONJG(Coef(KK))
+     &                      + DCONJG(Coef(JJ))*Coef(KK)) )
+          end do
+        end do
+C**------------------------------------------------------------
+C**   Singlet-Triplet block contributions to NUD
+C**------------------------------------------------------------
+
+        NUD(I) = (0.D0,0.D0)
+
+        II = -sites
+        KK = NSng-1
+        DO J=1,sites-1
+          II = II + sites+2-J
+          DO K=1,sites-J
+            JJ = II+K
+            KK = KK+3
+            NUD(I) = NUD(I) +
+     &                  0.25D0*DSQRT(2.D0)*(PHI(J,I)-PHI(J+K,I))
+     &         *(Coef(JJ)*DCONJG(Coef(KK+1))
+     &                  - DCONJG(Coef(JJ))*Coef(KK-1))
+          end do
+        end do
+C**------------------------------------------------------------
+C**   Triplet block contributions to NUD
+C**------------------------------------------------------------
+
+        KK = NSng-1
+        DO J=1,sites-1
+          II = II + sites+2-J
+          DO K=1,sites-J
+            KK = KK+3
+            NUD(I) = NUD(I) +
+     &              0.25D0*DSQRT(2.D0)*(PHI(J,I)+PHI(J+K,I))
+     &         *(Coef(KK)*DCONJG(Coef(KK+1))
+     &                + DCONJG(Coef(KK))*Coef(KK-1) )
+          end do
+        end do
+
+        MX(I) = 2.D0*DREAL(NUD(I))
+        MY(I) = -2.D0*DIMAG(NUD(I))
+
+        N(I) = 2.D0*N(I)
+        MX(I) = 2.D0*MX(I)
+        MY(I) = 2.D0*MY(I)
+        MZ(I) = 2.D0*MZ(I)
+
       end do
 
-      do i=1,2
-        j=j+1
-        x = 0.d0
-        x = x + dreal(inmat(4,1)*conjg(inmat(4,1)) -
-     &                   inmat(6,1)*conjg(inmat(6,1)))
-     &        + dreal(inmat(2,1)*conjg(inmat(5,1))
-     &                      + conjg(inmat(2,1))*inmat(5,1))
-     &                                             *(-1.d0)**(i+1)
-
-!        x = x + inmat(4,k)**2 - inmat(6,k)**2
-!        x = x + (inmat(2,k)*inmat(5,k)+inmat(2,k)*inmat(5,k))
-!     &                                             *(-1.d0)**(i+1)
-
-!          x = x + inmat(k,4)**2 - inmat(k,6)**2
-!          x = x + (inmat(k,2)*inmat(k,5)+inmat(k,2)*inmat(k,5))
-!     &                                             *(-1.d0)**(i+1)
-
-        n0(j) = n0(j) + x!/(3.d0*2.d0)
+      do i = 1, sites
+        n0(i) = n(i)
+        n0(x+i) = mx(i)
+        n0(y+i) = my(i)
+        n0(z+i) = mz(i)
       end do
 
       end subroutine intdens
@@ -613,7 +675,6 @@ C  hopping constant between lattice sites.
         do j=1,sites
           if (i.eq.j) Then
             test(i,j) = dcmplx(v(i) + v((dim*2-sites) + i),0.d0)
-            write(*,*) (dim-1)*2+i,dim*2-sites+i
           elseif (abs(i-j).eq.1) Then
             test(i,j) = dcmplx(-t,0.d0)
           else
@@ -670,116 +731,165 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 ***     Sort the eigenvalues in ascending order
 *********************************************************************
 
-      if (number.eq.0) then
-        write(*,*)
-        write(*,matrix) dreal(transpose(mat))
-        write(*,*)
-      end if
+!      if (number.eq.0) then
+!        write(*,*)
+!        write(*,matrix) dreal(transpose(mat))
+!        write(*,*)
+!      end if
 
       end subroutine hbuild
 
 ***************************************************************************
 
-      subroutine interHam(v,U,ham)
+      subroutine interHam(v,U0,U1,ham)
       implicit none
 
-      real(8), intent(in) :: U, v(dim*2)
+      real(8), intent(in) :: U0,U1, v(dim*2)
       complex(8),intent(out) :: ham(intd,intd)
       integer,parameter :: lwork=600
 
-      integer :: i,j,k,jj,info
+      integer :: Ntrp,Nsng,i,j,k,l,ii,jj,info
       real(8) :: rwork(100),cn(intd)
       complex(8) :: work(lwork)
 !      complex(8) :: dum,vl(6,6),vr(6,6),cn(6)
-      complex(8) :: vec(3),Bp(sites),Bm(sites)
+      complex(8) :: Bp(sites),Bm(sites)
 
-      ham = zero
+      ham = ZERO
 
-      do i=1,2
-        ham(i,i+1) = -dsqrt(2.d0)*t
-        ham(i+1,i) = -dsqrt(2.d0)*t
+*!!!!!     nb=intd
+
+      DO I=1,sites
+        BP(I) = (v(sites+i)*ONE + v(sites*2+I)*IONE)/DSQRT(2.D0)
+        BM(I) = (v(sites+i)*ONE - v(sites*2+I)*IONE)/DSQRT(2.D0)
       end do
 
-      do i=1,sites
-        Bp(i) = (v(sites+i)+ione*v(sites*2+i))/dsqrt(2.d0)
-        Bm(i) = (v(sites+i)-ione*v(sites*2+i))/dsqrt(2.d0)
+      NSng = sites*(sites+1)/2
+      NTrp = 3*sites*(sites-1)/2
+
+C**------------------------------------------------------------
+C**   Singlet block
+C**------------------------------------------------------------
+
+C**   First the diagonal elements
+
+      II = -sites
+      DO I=1,sites
+         II = II + sites+2-I
+         ham(II,II) = 2.D0*V(I) + U0
       end do
 
-      ham(1,1) = 2.d0*v(1) + U
-      ham(2,2) = V(1) + v(2)
-      ham(3,3) = 2.d0*v(2) + U
-
-      k = 0
-      do i=1,3,2
-        k = k + 1
-        vec(i) = (-1.d0)**(k)*Ba(k) + (-1.d0)**(k+1)*Bb(k)
+      II = -sites+1
+      DO I=1,sites-1
+         II = II + sites+2-I
+         ham(II,II) = V(I) + V(I+1) + U1
       end do
 
-!      vec(1) = -1.d0*Ba(1) + Bb(1)
-      vec(2) = v(7)-v(8)
-!      vec(3) = Ba(2) - Bb(2)
-
-      do j=1,3
-        ham(2,j+3) = vec(j)
-      end do
-
-      k=0
-      do i=1,3,2
-        k=k+1
-        vec(i) = Ba(mod(k,2)+1)*(-1.d0)**(k)
-     &                   + Bb(mod(k,2)+1)*(-1.d0)**(k+1)
-      end do
-
-      do j=1,3
-        ham(j+3,2) = vec(j)
-      end do
-
-      do i=4,6
-        do j=4,6
-          if (i.eq.j) then
-            do k=1,2
-              ham(i,j) = ham(i,j) + v(k)
-            end do
-            ham(i,j) = ham(i,j)
-     &                      + (v(7)+v(8))*(-1.d0)**(mod(i+1,3))
-          end if
-
+      IF (sites.GT.2) THEN
+        JJ=-sites+2
+        DO J=1,sites-2
+          JJ = JJ + sites+2-J
+          DO I=1,sites-J-1
+            ham(JJ+I-1,JJ+I-1) = V(J) + V(J+I+1)
+          end do
         end do
+      ENDIF
+
+C**   Now the off-diagonal elements
+
+      II = -sites
+      DO I=1,sites-1
+        II = II + sites+2-I
+        ham(II,II+1) = -DSQRT(2.D0)*T
+        ham(II+1,II) = -DSQRT(2.D0)*T
       end do
 
-      do i=4,5
-        ham(i,i+1) = Ba(2) + Bb(2)
-        ham(i+1,i) = Ba(1) + Bb(1)
+      II = -sites+1
+      DO I=1,sites-1
+        II = II + sites+2-I
+        ham(II,II+sites-I) = -DSQRT(2.D0)*T
+        ham(II+sites-I,II) = -DSQRT(2.D0)*T
       end do
 
-      ham(5,5) = ham(5,5) - (v(7)+v(8))
+      IF (sites.GT.2) THEN
+        JJ=-sites+2
+        DO J=1,sites-2
+          JJ = JJ + sites+2-J
+          DO I=1,sites-J-1
+            ham(JJ+I-2,JJ+I-1) = -T
+            ham(JJ+I-1,JJ+I-2) = -T
 
-!      call ZGEEV('n','v',6, ham, 6, cn, vl, 6, vr, 6,
-!     &                           WORK, LWORK, RWORK, INFO )
+            ham(JJ+I-1,JJ+I-1+(sites-J)) = -T
+            ham(JJ+I-1+(sites-J),JJ+I-1) = -T
+          end do
+        end do
+      ENDIF
 
-      call ZHEEV('v','l', 6, ham, 6, cn, work, lwork, rwork, info)
-*********************************************************************
-***     Sort the eigenvalues in ascending order
-*********************************************************************
-!      do I=1,6
-!        do J=i+1,6
-!          IF (dreal(cn(i)).GE.dreal(cn(J))) THEN
-!             DUM = cn(I)
-!             cn(I) = cn(J)
-!             cn(J) = DUM
-!
-!            do JJ=1,6
-!              DUM = vr(JJ,I)
-!              vr(JJ,I) = vr(JJ,J)
-!              vr(JJ,J) = DUM
-!            end do
-!          end if
-!        end do
-!      end do
-!
-!      ham = vr
+C**------------------------------------------------------------
+C**   Singlet-Triplet and Triplet-Singlet blocks
+C**------------------------------------------------------------
 
-      end subroutine interHam
+      II = -sites+1
+      JJ = NSng+1
+      DO J=1,sites-1
+         II = II + sites-J+2
+         DO I=1,sites-J
+
+            ham(II+I-1,JJ) = -BP(J) + BP(J+I)
+            ham(II+I-1,JJ+1) = v(sites*3+j) - v(sites*3+J+I)
+            ham(II+I-1,JJ+2) = BM(J) - BM(J+I)
+
+            ham(JJ,II+I-1) = -BM(J) + BM(J+I)
+            ham(JJ+1,II+I-1) = v(sites*3+j) - v(sites*3+J+I)
+            ham(JJ+2,II+I-1) = BP(J) - BP(J+I)
+
+            JJ=JJ+3
+         end do
+      end do
+C**------------------------------------------------------------
+C**   Triplet block
+C**------------------------------------------------------------
+
+      II = Nsng-1
+      DO I=1,sites-1
+         DO J=I+1,sites
+            II = II + 3
+            ham(II-1,II-1) = V(I) + V(J) + U1
+     &                          + v(sites*3+I) + v(sites*3+J)
+            ham(II,II) =  V(I) + V(J) + U1
+            ham(II+1,II+1) = V(I) + V(J) + U1
+     &                          - v(sites*3+I) - v(sites*3+J)
+
+            ham(II-1,II) = BM(I) + BM(J)
+            ham(II,II-1) = BP(I) + BP(J)
+            ham(II,II+1) = BM(I) + BM(J)
+            ham(II+1,II) = BP(I) + BP(J)
+         end do
+      end do
+
+      II = NSng-2
+      DO I=1,sites-1
+         DO J=I+1,sites
+            II = II+3
+
+            JJ = NSng-2
+            DO K=1,sites-1
+               DO L=K+1,sites
+                  JJ = JJ+3
+                  IF ((I.EQ.K).AND.(IABS(J-L).EQ.1).OR.
+     &                (J.EQ.L).AND.(IABS(I-K).EQ.1)) THEN
+                     ham(II,JJ) = -T
+                     ham(II+1,JJ+1) = -T
+                     ham(II+2,JJ+2) = -T
+                  ENDIF
+               end do
+            end do
+
+         end do
+      end do
+
+      call ZHEEV('v','l', intd, ham, intd, cn, work, lwork, rwork, info)
+
+      end subroutine
 
 ***************************************************************************
       subroutine Pauli(sigma)
