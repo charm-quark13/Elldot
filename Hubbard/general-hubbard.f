@@ -8,11 +8,11 @@ C  as portability of the code to future programs.
 
       integer :: i,j,k,iter,it
 
-      real(8) :: ftol,fret,x,u,v(dim*2),dens(dim*2)
+      real(8) :: ftol,fret,x,u0,u1,v(dim*2),dens(dim*2)
       real(8) :: Bx(sites), By(sites), Bz(sites)
       real(8) :: txc1,txc2
-      real(8) :: vstart(dim*2),vhxc(2),bxc(6)
-      complex(8) :: htest(6,6)
+      real(8) :: vstart(dim*2),vhxc(2),bxc(intd)
+      complex(8) :: htest(intd,intd)
       real(8) :: tau1(3),tau2(3)
 
       write(matrix,'(a, i3, a)') '(', dim, 'f14.8)'
@@ -88,14 +88,15 @@ C  as portability of the code to future programs.
 !          v(sites*3+i) = Bz(i)
 !        end do
 
-        U = it/10.d0
-
+        U0 = it/10.d0
+!        U0 = 0.d0
+        U1 = 0.d0
         ntarget = 0.d0
 
 !        write(*,vector) v
 !        write(*,*) '^^^^^ v ^^^^^'
 
-        call interHam(v,U,htest)
+        call interHam(v,U0,U1,htest)
         call intdens(ntarget,htest)
 
 ***************************************************************************
@@ -165,7 +166,7 @@ C  as portability of the code to future programs.
         if (it.eq.1) then
           write(100,*) 'U','xc torque 1', 'xc torque 2'
         end if
-        write(100,*) u,txc1,-txc2
+        write(100,*) u0,txc1,-txc2
 !        write(*,vector) tau1
 !        write(*,*) '******'
 !        write(*,vector) tau2

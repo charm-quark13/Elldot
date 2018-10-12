@@ -277,7 +277,7 @@ C  dF(n{v(x)}) = 2 * \int (n{v(x)} - ntarget{v(x)})*(dn/dv) dx
 ***   over in the vec matrix used to calculate the magnetizations/densities.
 ***   For explicit representation of the vec matrix, see the LaTeX document.
 
-      i = (k-1)*(occ+sites)
+      i = (k-1)*(occ*sites)
 
 ***   Solving the first magnetization (m_0)
 ***   See the LaTeX for the explicit representation of the vec matrix.
