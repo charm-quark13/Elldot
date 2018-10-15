@@ -6,8 +6,8 @@
       integer, parameter :: dim=spin*sites, intd=2*sites**2-sites
       real(kind=8), parameter :: t=0.5d0
 
-      integer :: number
-      real(8) :: ntarget(dim*2),En(dim)
+      integer :: number,rest,xc,corr
+      real(8) :: ntarget(dim*2),En(dim),mix,tol,U0,U1
       complex(8) :: hmat(dim,dim)
 !      real(8) :: tBx(sites), tBy(sites), tBz(sites)
       complex(8) :: sig(spin*4,spin*4)
@@ -37,8 +37,8 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
       v(7) = 0.d0
 
 C  Recalculating the eigenvectors through exact diagonalization of the Hamiltonian.
-      call hbuild(v,hmat)
-
+!      call hbuild(v,hmat)
+      call XcIterator(xc,v,U0,U1,hmat)
       dens = 0.d0
 
       call densvec(dens,hmat)
@@ -725,21 +725,708 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 
       call ZHEEV('v','l', dim, mat, dim, en, work, lwork, rwork, info)
 
-!      call ZGEEV('n','v', dim, mat, dim, En, vl, dim, vr, dim,
-!     &                           WORK, LWORK, RWORK, INFO )
-*********************************************************************
-***     Sort the eigenvalues in ascending order
-*********************************************************************
-
-!      if (number.eq.0) then
-!        write(*,*)
-!        write(*,matrix) dreal(transpose(mat))
-!        write(*,*)
-!      end if
-
       end subroutine hbuild
 
 ***************************************************************************
+      subroutine XcIterator(xc,v,U0,U1,ham)
+      implicit none
+
+      integer,intent(in) :: xc
+      real(8),intent(in) :: U0,U1
+      real(8),intent(inout) :: v(dim*2)
+      complex(8),intent(out) :: ham(intd,intd)
+
+      integer :: i,j,k,iter,maxit
+      real(8) :: VXC(sites),ec,eold
+      real(8) :: vhxc(sites),bxcy(sites),bxcx(sites),bxcz(sites)
+      real(8) :: vhxco(sites),bxcyo(sites),bxcxo(sites),bxczo(sites)
+      real(8) :: nks(dim*2),tt(3),tx(sites),ty(sites),tz(sites)
+
+      maxit = 10000
+      iter = 1
+      eold = .1d0
+      ham = zero
+
+      if (xc.eq.0) then
+
+        call hbuild(v,ham)
+
+      else
+
+        IF (REST.EQ.0) THEN
+          DO 2 I=1,sites
+            VHXC(I) = 0.D0
+            BXCX(I) = 0.D0
+            BXCY(I) = 0.D0
+            BXCZ(I) = 0.D0
+2         CONTINUE
+        ELSEIF (REST.EQ.1) THEN
+          READ(2)VHXC,BXCX,BXCY,BXCZ
+            REWIND 2
+        ENDIF
+
+        if (iter /= maxit.or.
+
+  DABS((En(1)- EOLD)/EOLD).GT.TOL) then
+
+          WRITE(*,*)
+          WRITE(*,*)'************',iter,'*************'
+          WRITE(*,*)
+
+          DO 3 I=1,sites
+            V(I) = V(I) + VHXC(I)
+            v(sites+I) = v(sites+I) + BXCX(I)
+            v(sites*2+I) = v(sites*2+I) + BXCY(I)
+            v(sites*3+I) = v(sites*3+I) + BXCZ(I)
+3         CONTINUE
+
+          call hbuild(v,ham)
+          call densvec(nks,ham)
+
+          DO 24 I=1,sites
+            VHXCO(I) = VHXC(I)
+            BXCXO(I) = BXCX(I)
+            BXCYO(I) = BXCY(I)
+            BXCZO(I) = BXCZ(I)
+24        CONTINUE
+
+          IF (XC.EQ.1) THEN
+            CALL XCPOT_SLATER(ham,VXC,VHXC,BXCX,BXCY,BXCZ)
+          ELSEIF (XC.EQ.2) THEN
+            CALL XCPOT_OEP(ham,VXC,VHXC,BXCX,BXCY,BXCZ)
+          ELSEIF (XC.EQ.3) THEN
+            CALL XCPOT_BALDA(T,VXC,VHXC,BXCX,BXCY,BXCZ,Nks,EC)
+          ENDIF
+
+          CALL TCALC (TT,TX,TY,TZ,nks,BXCX,BXCY,BXCZ)
+
+C**   do the xc torque correction
+
+          IF (CORR.EQ.1) THEN
+!             WRITE(*,*)'total torque:'
+!             WRITE(*,*)TT
+!             WRITE(*,*)
+             CALL BCORR(nks,BXCX,BXCY,BXCZ,TT)
+             CALL TCALC (TT,TX,TY,TZ,nks,BXCX,BXCY,BXCZ)
+!             WRITE(*,*)'total torque:'
+!             WRITE(*,*)TT
+!             WRITE(*,*)
+C         STOP
+          ENDIF
+
+          DO 23 I=1,sites
+             VHXC(I) = MIX*VHXC(I) + (1.D0-MIX)*VHXCO(I)
+             BXCX(I) = MIX*BXCX(I) + (1.D0-MIX)*BXCXO(I)
+             BXCY(I) = MIX*BXCY(I) + (1.D0-MIX)*BXCYO(I)
+             BXCZ(I) = MIX*BXCZ(I) + (1.D0-MIX)*BXCZO(I)
+23        CONTINUE
+
+
+
+        endif
+
+
+
+
+        if (iter.eq.maxit) then
+          write(*,*) 'Maximum iterations reached with no convergence.'
+          write(*,*) 'Please restart the calculation.'
+          call exit(-1)
+        end if
+
+      end if
+
+      end subroutine XcIterator
+
+*************************************************************************
+
+      SUBROUTINE BCORR (den,BX,BY,BZ,TT)
+      IMPLICIT NONE
+
+      INTEGER I,J,II,JJ,NM,INFO,COP
+      PARAMETER (NM = 3*sites-3)
+      INTEGER IPIV(NM),LWORK
+      PARAMETER (LWORK=100)
+      real(8) :: MX(sites),MY(sites),MZ(sites),
+     &           BX(sites),BY(sites),BZ(sites),
+     &           MAT(NM,NM),RVEC(NM),WORK(LWORK),
+     &           BBX(sites),BBY(sites),BBZ(sites)
+      real(8) :: AX(sites),AY(sites),AZ(sites),
+     &           AD,MSX,MSY,MSZ,M2,TT(3),
+     &           PX(sites),PY(sites),PZ(sites),
+     &           QX(sites),QY(sites),QZ(sites)
+      real(8) :: den(dim*2)
+
+      do i=1,sites
+        mx(i) = den(sites+i)
+        my(i) = den(2*sites+i)
+        mz(i) = den(3*sites+i)
+      end do
+
+      COP=0
+C**--------------------------------------------------------------------***
+C**   Do we have a coplanar situation?
+C**   COP=1,2,3: torque along x,y,z
+C**--------------------------------------------------------------------***
+      MSX = 0.D0
+      MSY = 0.D0
+      MSZ = 0.D0
+      M2 = 0.D0
+      DO 1 I=1,sites
+         MSX = MSX + DABS(MX(I))
+         MSY = MSY + DABS(MY(I))
+         MSZ = MSZ + DABS(MZ(I))
+         M2 = M2 + MX(I)**2 + MY(I)**2 + MZ(I)**2
+1     CONTINUE
+
+      IF (MSX.LT.1.D-10) COP=1
+      IF (MSY.LT.1.D-10) COP=2
+      IF (MSZ.LT.1.D-10) COP=3
+
+      IF (COP.EQ.0) THEN
+C**--------------------------------------------------------------------***
+C**   Not coplanar, so we have to solve a system of equations
+C**--------------------------------------------------------------------***
+
+      DO 10 I=1,sites
+         AD = MY(sites)*MZ(1) - MZ(sites)*MY(1)
+         AX(I) = -(MY(sites)*MZ(I) - MZ(sites)*MY(I))/AD
+         AY(I) = -(MZ(sites)*MX(I) - MX(sites)*MZ(I))/AD
+         AZ(I) = -(MX(sites)*MY(I) - MY(sites)*MX(I))/AD
+10    CONTINUE
+
+      DO 11 I=1,sites
+         PX(I) = MY(1)*AX(I) + MY(I)
+         PY(I) = MY(1)*AY(I) - MX(I)
+         PZ(I) = MY(1)*AZ(I)
+
+         QX(I) = MZ(1)*AX(I) + MZ(I)
+         QY(I) = MZ(1)*AY(I)
+         QZ(I) = MZ(1)*AZ(I) - MX(I)
+11    CONTINUE
+
+      DO 20 I=1,sites-1
+         II = 3*(I-1) + 1
+
+         RVEC(II)   = -MX(sites)**2*BY(I) - MX(sites)**2*AY(I)*BX(1)
+     &              - (MY(1)*AY(I)-MX(I))*MX(sites)*BY(sites)
+     &              - MZ(1)*AY(I)*MX(sites)*BZ(sites)
+
+         RVEC(II+1) = -MX(sites)**2*BZ(I) - MX(sites)**2*AZ(I)*BX(1)
+     &              - MY(1)*AZ(I)*MX(sites)*BY(sites)
+     &              - (MZ(1)*AZ(I)-MX(I))*MX(sites)*BZ(sites)
+
+         RVEC(II+2) = -MX(sites)**2*BX(I+1) - MX(sites)**2*AX(I+1)*BX(1)
+     &              - (MY(1)*AX(I+1)+MY(I+1))*MX(sites)*BY(sites)
+     &              - (MZ(1)*AX(I+1)+MZ(I+1))*MX(sites)*BZ(sites)
+
+20    CONTINUE
+
+      DO 30 I=1,sites-1
+      DO 30 J=1,sites-1
+         II = 3*(I-1) + 1
+         JJ = 3*(J-1) + 1
+
+         MAT(II,JJ) = MX(sites)**2*AY(I)*AY(J)
+     &              + (MY(1)*AY(I)-MX(I))*PY(J)
+     &              + MZ(1)*AY(I)*QY(J)
+
+         MAT(II,JJ+1) = MX(sites)**2*AY(I)*AZ(J)
+     &              + (MY(1)*AY(I)-MX(I))*PZ(J)
+     &              + MZ(1)*AY(I)*QZ(J)
+
+         MAT(II,JJ+2) = MX(sites)**2*AY(I)*AX(J+1)
+     &              + (MY(1)*AY(I)-MX(I))*PX(J+1)
+     &              + MZ(1)*AY(I)*QX(J+1)
+
+         MAT(II+1,JJ) = MX(sites)**2*AZ(I)*AY(J)
+     &              + MY(1)*AZ(I)*PY(J)
+     &              + (MZ(1)*AZ(I)-MX(I))*QY(J)
+
+         MAT(II+1,JJ+1) = MX(sites)**2*AZ(I)*AZ(J)
+     &              + MY(1)*AZ(I)*PZ(J)
+     &              + (MZ(1)*AZ(I)-MX(I))*QZ(J)
+
+         MAT(II+1,JJ+2) = MX(sites)**2*AZ(I)*AX(J+1)
+     &              + MY(1)*AZ(I)*PX(J+1)
+     &              + (MZ(1)*AZ(I)-MX(I))*QX(J+1)
+
+         MAT(II+2,JJ) = MX(sites)**2*AX(I+1)*AY(J)
+     &              + (MY(1)*AX(I+1)+MY(I+1))*PY(J)
+     &              + (MZ(1)*AX(I+1)+MZ(I+1))*QY(J)
+
+         MAT(II+2,JJ+1) = MX(sites)**2*AX(I+1)*AZ(J)
+     &              + (MY(1)*AX(I+1)+MY(I+1))*PZ(J)
+     &              + (MZ(1)*AX(I+1)+MZ(I+1))*QZ(J)
+
+         MAT(II+2,JJ+2) = MX(sites)**2*AX(I+1)*AX(J+1)
+     &              + (MY(1)*AX(I+1)+MY(I+1))*PX(J+1)
+     &              + (MZ(1)*AX(I+1)+MZ(I+1))*QX(J+1)
+
+30    CONTINUE
+
+      DO 35 I=1,NM
+         MAT(I,I) = MAT(I,I) + MX(sites)**2
+35    CONTINUE
+
+      CALL DSYSV('L',NM,1,MAT,NM,IPIV,RVEC,NM,WORK,LWORK,INFO )
+
+      DO 40 I=1,sites-1
+         II = 3*(I-1)+1
+         BBY(I) = RVEC(II)
+         BBZ(I) = RVEC(II+1)
+         BBX(I+1) = RVEC(II+2)
+40    CONTINUE
+
+      BBX(1) = 0.D0
+      DO 45 I=1,sites-1
+         BBX(1) = BBX(1) + AY(I)*BBY(I) + AZ(I)*BBZ(I)
+     &                   + AX(I+1)*BBX(I+1)
+45    CONTINUE
+
+      BBY(sites) = MY(sites)*BBX(sites)/MX(sites)
+      BBZ(sites) = MZ(sites)*BBX(sites)/MX(sites)
+      DO 50 I=1,sites-1
+         BBY(sites) = BBY(sites) + MY(I)*BBX(I)/MX(sites)
+     &                     - MX(I)*BBY(I)/MX(sites)
+         BBZ(sites) = BBZ(sites) + MZ(I)*BBX(I)/MX(sites)
+     &                     - MX(I)*BBZ(I)/MX(sites)
+50    CONTINUE
+
+      DO 100 I=1,sites
+         BX(I) = - BBX(I)
+         BY(I) = - BBY(I)
+         BZ(I) = - BBZ(I)
+100   CONTINUE
+
+      ELSE
+C**--------------------------------------------------------------------***
+C**   coplanar, so we have an explicit solution
+C**--------------------------------------------------------------------***
+      DO 200 I=1,sites
+         BX(I) = BX(I) - (TT(2)*MZ(I) - TT(3)*MY(I))/M2
+         BY(I) = BY(I) - (TT(3)*MX(I) - TT(1)*MZ(I))/M2
+         BZ(I) = BZ(I) - (TT(1)*MY(I) - TT(2)*MX(I))/M2
+200   CONTINUE
+
+      ENDIF
+
+      END subroutine
+
+****************************************************************************
+      SUBROUTINE TCALC (TT,TX,TY,TZ,den,BXCX,BXCY,BXCZ)
+      IMPLICIT NONE
+
+      INTEGER I
+
+      DOUBLE PRECISION TT(3),TX(sites),TY(sites),TZ(sites),
+     &                 den(dim*2),
+     &                 BXCX(sites),BXCY(sites),BXCZ(sites)
+
+      TT(1)=0.D0
+      TT(2)=0.D0
+      TT(3)=0.D0
+      DO 10 I=1,sites
+         TX(I) = den(2*sites+I)*BXCZ(I) - den(3*sites+I)*BXCY(I)
+         TY(I) = den(3*sites+I)*BXCX(I) - den(sites+I)*BXCZ(I)
+         TZ(I) = den(sites+I)*BXCY(I) - den(2*sites+I)*BXCX(I)
+         TT(1) = TT(1) + TX(I)
+         TT(2) = TT(2) + TY(I)
+         TT(3) = TT(3) + TZ(I)
+10    CONTINUE
+
+      END subroutine
+
+****************************************************************************
+      SUBROUTINE GCALC(M,PHI,GAMMA)
+      IMPLICIT NONE
+
+      INTEGER :: I,J,K,L
+      COMPLEX(8) :: M(2*sites,2*sites)
+      complex(8) :: GAMMA(2,2,sites,sites),PHI(2*sites,2,sites)
+
+C**   Define the orbitals phi(m,sigma,x):
+C**   m = 1...NP is the orbital index
+C**   sigma = 1,2 (up, down) is the spin index
+C**   x = 1,...,NP (lattice points) is the spatial coordinate
+
+      DO 9 I=1,2*sites
+      DO 9 J=1,sites
+         PHI(I,1,J) = M(J,I)
+         PHI(I,2,J) = M(J+sites,I)
+9     CONTINUE
+
+      DO 10 I=1,2
+      DO 10 J=1,2
+      DO 10 K=1,sites
+      DO 10 L=1,sites
+         GAMMA(I,J,K,L) = PHI(1,I,K)*DCONJG(PHI(1,J,L))
+     &                  + PHI(2,I,K)*DCONJG(PHI(2,J,L))
+10    CONTINUE
+
+      END subroutine
+
+C************************************************************************
+
+      SUBROUTINE XCPOT_OEP(M,VXC,VHXC,BXCX,BXCY,BXCZ)
+      IMPLICIT NONE
+
+      INTEGER ND,I,J,K,MU,NU,ALPHA,BETA,R,RP,INFO,LWORK
+
+      PARAMETER (ND=4*sites,LWORK=100)
+      real(8) :: SING(ND)
+      complex(8) :: M(2*sites,2*sites),
+     &              GAMMA(2,2,sites,sites),PHI(2*sites,2,sites),DUM,
+     &              LM(ND,ND),BMAT(2,2*sites),
+     &              RVEC(ND),VXCMAT(2,2,sites),
+     &              X(ND),X1(ND),UMAT(ND,ND),VTMAT(ND,ND),WORK(LWORK)
+      DOUBLE PRECISION N(sites),VH(sites),VXC(sites),RWORK(100),
+     &                 VHXC(sites),BXCX(sites),BXCY(sites),BXCZ(sites)
+
+      CALL GCALC(M,PHI,GAMMA)
+
+      DO 1 I=1,sites
+1        N(I) = DREAL(GAMMA(1,1,I,I) + GAMMA(2,2,I,I))
+
+      VH(1) = U0*N(1) + U1*N(2)
+      DO 2 I=2,sites-1
+         VH(I) = U0*N(I) + U1*N(I-1) + U1*N(I+1)
+2     CONTINUE
+      VH(sites) = U0*N(sites) + U1*N(sites-1)
+
+C**   calculate the (ND x ND) OEP matrix
+
+      DO 4 MU=1,2
+      DO 4 NU=1,2
+      DO 4 ALPHA=1,2
+      DO 4 BETA=1,2
+      DO 4 R=1,sites
+      DO 4 RP=1,sites
+         DUM = (0.D0,0.D0)
+         DO 5 I=1,2
+         DO 5 J=1,2*sites
+            IF (I.NE.J) THEN
+               DUM = DUM + PHI(I,BETA,RP)*DCONJG(PHI(J,ALPHA,RP))
+     &               *DCONJG(PHI(I,MU,R))*PHI(J,NU,R)/(En(J)-En(I))
+     &                   + DCONJG(PHI(I,ALPHA,RP))*PHI(J,BETA,RP)
+     &               *PHI(I,NU,R)*DCONJG(PHI(J,MU,R))/(En(J)-En(I))
+            ENDIF
+5        CONTINUE
+         LM(MU+(NU-1)*2+(R-1)*4,ALPHA+(BETA-1)*2+(RP-1)*4) = DUM
+4     CONTINUE
+
+C**   calculate the OEP right-hand side
+
+      DO 10 I=1,2
+      DO 10 J=1,2*sites
+         DUM = (0.D0,0.D0)
+         IF (I.NE.J) THEN
+            DO 11 ALPHA=1,2
+            DO 11 BETA=1,2
+               DO 12 K=1,sites
+                  DUM = DUM + (U0/(En(I)-En(J)))*DCONJG(PHI(I,ALPHA,K))
+     &                          *GAMMA(ALPHA,BETA,K,K)*PHI(J,BETA,K)
+12             CONTINUE
+               DO 13 K=1,sites-1
+                  DUM = DUM +(U1/(En(I)-En(J)))*DCONJG(PHI(I,ALPHA,K))
+     &                     *GAMMA(ALPHA,BETA,K,K+1)*PHI(J,BETA,K+1)
+     &                      +(U1/(En(I)-En(J)))*DCONJG(PHI(I,ALPHA,K+1))
+     &                        *GAMMA(ALPHA,BETA,K+1,K)*PHI(J,BETA,K)
+13             CONTINUE
+11          CONTINUE
+         ENDIF
+         BMAT(I,J) = DUM
+10    CONTINUE
+
+      DO 15 MU=1,2
+      DO 15 NU=1,2
+      DO 15 R=1,sites
+         DUM = (0.D0,0.D0)
+         DO 16 I=1,2
+         DO 16 J=1,2*sites
+            DUM = DUM + DCONJG(BMAT(I,J)*PHI(I,MU,R))*PHI(J,NU,R)
+     &                + BMAT(I,J)*DCONJG(PHI(J,MU,R))*PHI(I,NU,R)
+16       CONTINUE
+         RVEC(MU+(NU-1)*2+(R-1)*4) = DUM
+15    CONTINUE
+
+C**   now do the singular value decomposition
+
+      CALL ZGESVD( 'A', 'A', ND, ND, LM, ND, SING, UMAT, ND, VTMAT, ND,
+     &                   WORK, LWORK, RWORK, INFO )
+
+      DO 70 I=1,ND
+         DUM = (0.D0,0.D0)
+         DO 71 J=1,ND
+            DUM = DUM + DCONJG(UMAT(J,I))*RVEC(J)
+71       CONTINUE
+         X1(I) = DUM
+70    CONTINUE
+
+      DO 72 I=1,ND
+         IF (DABS(SING(I)).GT.1.D-10) THEN
+            SING(I) = 1.D0/SING(I)
+         ELSE
+            SING(I) = 0.D0
+         ENDIF
+         X1(I) = SING(I)*X1(I)
+72    CONTINUE
+
+      DO 75 I=1,ND
+         DUM = (0.D0,0.D0)
+         DO 76 J=1,ND
+            DUM = DUM + DCONJG(VTMAT(J,I))*X1(J)
+76       CONTINUE
+         X(I) = DUM
+75    CONTINUE
+
+      DO 80 MU=1,2
+      DO 80 NU=1,2
+      DO 80 R=1,sites
+         VXCMAT(MU,NU,R) = X(MU+(NU-1)*2+(R-1)*4)
+80    CONTINUE
+
+      DO 90 R=1,sites
+         VXC(R) = DREAL(VXCMAT(1,1,R) + VXCMAT(2,2,R))/2.D0
+         VHXC(R) = VH(R) + VXC(R)
+         BXCX(R) = DREAL(VXCMAT(1,2,R) + VXCMAT(2,1,R))/2.D0
+         BXCY(R) = DREAL((0.D0,1.D0)*(VXCMAT(1,2,R) - VXCMAT(2,1,R)))
+     &             /2.D0
+         BXCZ(R) = DREAL(VXCMAT(1,1,R) - VXCMAT(2,2,R))/2.D0
+90    CONTINUE
+
+      END subroutine
+
+C************************************************************************
+
+      SUBROUTINE XCPOT_SLATER(M,VXC,VHXC,BXCX,BXCY,BXCZ)
+      IMPLICIT NONE
+
+      INTEGER :: I
+      complex(8) :: M(2*sites,2*sites),
+     &              NUU(sites),NUD(sites),NDU(sites),NDD(sites),
+     &              VUU(sites),VUD(sites),VDU(sites),VDD(sites),
+     &              BUU(sites),BUD(sites),BDU(sites),BDD(sites),
+     &              MAT(4,4),DEN(sites),
+     &              GAMMA(2,2,sites,sites),PHI(2*sites,2,sites)
+
+      real(8) :: N(sites),MX(sites),MY(sites),MZ(sites),
+     &           VH(sites),VXC(sites),VHXC(sites),
+     &           BXCX(sites),BXCY(sites),BXCZ(sites)
+
+      CALL GCALC(M,PHI,GAMMA)
+
+      DO 1 I=1,sites
+         NUU(I) = CDABS(M(I,1))**2 + CDABS(M(I,2))**2
+         NUD(I) = M(I,1)*DCONJG(M(I+sites,1)) +
+     &                    M(I,2)*DCONJG(M(I+sites,2))
+         NDU(I) = DCONJG(NUD(I))
+         NDD(I) = CDABS(M(I+sites,1))**2 + CDABS(M(I+sites,2))**2
+1     CONTINUE
+
+      DO 2 I=1,sites
+         N(I) = DREAL(NUU(I) + NDD(I))
+         MX(I) = DREAL(NUD(I) + NDU(I))
+         MY(I) = DREAL((0.D0,1.D0)*(NUD(I) - NDU(I)))
+         MZ(I) = DREAL(NUU(I) - NDD(I))
+2     CONTINUE
+
+      VH(1) = U0*N(1) + U1*N(2)
+      DO 3 I=2,sites-1
+         VH(I) = U0*N(I) + U1*N(I-1) + U1*N(I+1)
+3     CONTINUE
+      VH(sites) = U0*N(sites) + U1*N(sites-1)
+
+      DO 5 I=1,sites
+
+      BUU(I) = -2.D0*U0*(NUU(I)*NUU(I) + NUD(I)*NDU(I))
+      BDU(I) = -2.D0*U0*(NDU(I)*NUU(I) + NDD(I)*NDU(I))
+      BUD(I) = -2.D0*U0*(NUU(I)*NUD(I) + NUD(I)*NDD(I))
+      BDD(I) = -2.D0*U0*(NDU(I)*NUD(I) + NDD(I)*NDD(I))
+
+      IF (I.LT.sites) THEN
+      BUU(I) = BUU(I) -2.D0*U1*(GAMMA(1,1,I,I+1)*GAMMA(1,1,I+1,I)
+     &                         +GAMMA(1,2,I,I+1)*GAMMA(2,1,I+1,I))
+      BDU(I) = BDU(I) -2.D0*U1*(GAMMA(2,1,I,I+1)*GAMMA(1,1,I+1,I)
+     &                         +GAMMA(2,2,I,I+1)*GAMMA(2,1,I+1,I))
+      BUD(I) = BUD(I) -2.D0*U1*(GAMMA(1,1,I,I+1)*GAMMA(1,2,I+1,I)
+     &                         +GAMMA(1,2,I,I+1)*GAMMA(2,2,I+1,I))
+      BDD(I) = BDD(I) -2.D0*U1*(GAMMA(2,1,I,I+1)*GAMMA(1,2,I+1,I)
+     &                         +GAMMA(2,2,I,I+1)*GAMMA(2,2,I+1,I))
+      ENDIF
+
+      IF (I.GT.1) THEN
+      BUU(I) = BUU(I) -2.D0*U1*(GAMMA(1,1,I,I-1)*GAMMA(1,1,I-1,I)
+     &                         +GAMMA(1,2,I,I-1)*GAMMA(2,1,I-1,I))
+      BDU(I) = BDU(I) -2.D0*U1*(GAMMA(2,1,I,I-1)*GAMMA(1,1,I-1,I)
+     &                         +GAMMA(2,2,I,I-1)*GAMMA(2,1,I-1,I))
+      BUD(I) = BUD(I) -2.D0*U1*(GAMMA(1,1,I,I-1)*GAMMA(1,2,I-1,I)
+     &                         +GAMMA(1,2,I,I-1)*GAMMA(2,2,I-1,I))
+      BDD(I) = BDD(I) -2.D0*U1*(GAMMA(2,1,I,I-1)*GAMMA(1,2,I-1,I)
+     &                         +GAMMA(2,2,I,I-1)*GAMMA(2,2,I-1,I))
+      ENDIF
+
+5     CONTINUE
+
+      DO 10 I=1,sites
+         DEN(I) = 2.D0*N(I)*(NUU(I)*NDD(I)-NUD(I)*NDU(I))
+
+         MAT(1,1) = N(I)*NDD(I) - NUD(I)*NDU(I)
+         MAT(1,2) = -NDD(I)*NUD(I)
+         MAT(1,3) = -NDD(I)*NDU(I)
+         MAT(1,4) = NUD(I)*NDU(I)
+
+         MAT(2,1) = -NDD(I)*NDU(I)
+         MAT(2,2) = 2.D0*NUU(I)*NDD(I) - NUD(I)*NDU(I)
+         MAT(2,3) = NDU(I)**2
+         MAT(2,4) = -NUU(I)*NDU(I)
+
+         MAT(3,1) = -NDD(I)*NUD(I)
+         MAT(3,2) = NUD(I)**2
+         MAT(3,3) = 2.D0*NUU(I)*NDD(I) - NUD(I)*NDU(I)
+         MAT(3,4) = -NUU(I)*NUD(I)
+
+         MAT(4,1) = NUD(I)*NDU(I)
+         MAT(4,2) = -NUU(I)*NUD(I)
+         MAT(4,3) = -NUU(I)*NDU(I)
+         MAT(4,4) = N(I)*NUU(I) - NUD(I)*NDU(I)
+
+         VUU(I) = ( MAT(1,1)*BUU(I) + MAT(1,2)*BDU(I)
+     &            + MAT(1,3)*BUD(I) + MAT(1,4)*BDD(I) )/DEN(I)
+         VDU(I) = ( MAT(2,1)*BUU(I) + MAT(2,2)*BDU(I)
+     &            + MAT(2,3)*BUD(I) + MAT(2,4)*BDD(I) )/DEN(I)
+         VUD(I) = ( MAT(3,1)*BUU(I) + MAT(3,2)*BDU(I)
+     &            + MAT(3,3)*BUD(I) + MAT(3,4)*BDD(I) )/DEN(I)
+         VDD(I) = ( MAT(4,1)*BUU(I) + MAT(4,2)*BDU(I)
+     &            + MAT(4,3)*BUD(I) + MAT(4,4)*BDD(I) )/DEN(I)
+
+         VXC (I) = DREAL(VUU(I) + VDD(I))/2.D0
+         BXCX(I) = DREAL(VDU(I) + VUD(I))/2.D0
+         BXCY(I) = DREAL(-IONE*VDU(I) + IONE*VUD(I))/2.D0
+         BXCZ(I) = DREAL(VUU(I) - VDD(I))/2.D0
+
+         VHXC(I) = VH(I) + VXC(I)
+10    CONTINUE
+
+      END subroutine
+**********************************************************************
+      SUBROUTINE XCPOT_BALDA(T,VXC,VHXC,BXCX,BXCY,BXCZ,
+     &                       NN,EC)
+      IMPLICIT NONE
+
+      INTEGER I
+      real(8) :: UU,PI,EDR,T,EC,A,B,C,BETU,S,
+     &           ALPHA,BETA,GAMMA,BETA_DM,BETA_DN,ALPHA_DM,
+     &           ALPHA_DN,GAMMA_DM,GAMMA_DN,GARG,EHOM
+
+      real(8) :: N(sites),NN(dim*2),
+     &           MX(sites),MY(sites),MZ(sites),M(sites),
+     &           ECD(sites),VC,BC,BCX,BCY,BCZ
+
+      real(8) :: VXC(sites),VHXC(sites),
+     &           BXCX(sites),BXCY(sites),BXCZ(sites)
+
+
+      do i=1,sites
+        n(i) = nn(i)
+        mx(i) = nn(sites+i)
+        my(i) = nn(2*sites + i)
+        mz(i) = nn(3*sites + i)
+      end do
+
+      PI = 3.141592653589793D0
+      EDR = 1.D0/3.D0
+
+      UU = U0/T
+
+      A = 0.7504D0
+      B = 0.1479D0
+      C = 0.5574D0
+      BETU = (2.D0 + A*UU + B*UU**2)/(1.D0 + C*UU + B*UU**2)
+
+      DO 1 I=1,sites
+         N(I) = NN(I)
+         M(I) = DSQRT(MX(I)**2+MY(I)**2+MZ(I)**2)
+
+         S = 1.D0
+         IF (N(I).GE.1.D0) THEN
+            N(I) = 2.D0-N(I)
+            S = -1.D0
+         ENDIF
+
+         ALPHA = ( (N(I)**2-M(I)**2)/N(I)**1.875D0)**(UU**EDR)
+         ALPHA_DN = UU**EDR*(N(I)**0.125D0 - M(I)**2/N(I)**1.875D0)
+     &            **(UU**EDR - 1.D0)
+     &            * (1.D0 + 15D0*M(I)**2/N(I)**2)/(8.D0*N(I)**0.875D0)
+         ALPHA_DM = -UU**EDR*(N(I)**0.125D0 - M(I)**2/N(I)**1.875D0)
+     &            **(UU**EDR - 1.D0) * 2.D0*M(I)/N(I)**1.875D0
+
+         BETA = BETU**ALPHA
+         BETA_DN = ALPHA*BETU**(ALPHA-1.D0) * ALPHA_DN
+         BETA_DM = ALPHA*BETU**(ALPHA-1.D0) * ALPHA_DM
+
+         GARG = DSQRT(UU)/(1.D0 - (M(I)/N(I))**1.5D0)
+
+         IF (GARG.LT.46.D0) THEN
+            GAMMA = 2.D0*DEXP(GARG)
+         ELSE
+            GAMMA = 1.D20
+         ENDIF
+         GAMMA_DN = -GAMMA*DSQRT(UU)/(1.D0-(M(I)/N(I))**1.5D0)**2
+     &            * (1.5D0*M(I)/N(I)**2)*DSQRT(M(I)/N(I))
+         GAMMA_DM =  GAMMA*DSQRT(UU)/(1.D0-(M(I)/N(I))**1.5D0)**2
+     &            * (1.5D0/N(I))*DSQRT(M(I)/N(I))
+
+         EHOM = -(2.D0*T/PI)*BETA*DSIN(PI*N(I)/BETA)*DCOS(PI*M(I)/GAMMA)
+
+         ECD(I) = EHOM + U0*(M(I)**2-N(I)**2)/4.D0 + (4.D0*T/PI)
+     &          * DSIN(PI*N(I)/2.D0)*DCOS(PI*M(I)/2.D0)
+
+         VC = -(2.D0/PI)*BETA_DN
+     &         *DSIN(PI*N(I)/BETA)*DCOS(PI*M(I)/GAMMA)
+     &       - 2.D0*(1.D0 - N(I)*BETA_DN/BETA)
+     &         *DCOS(PI*N(I)/BETA)*DCOS(PI*M(I)/GAMMA)
+     &       - 2.D0*BETA*(M(I)*GAMMA_DN/GAMMA**2)
+     &         *DSIN(PI*N(I)/BETA)*DSIN(PI*M(I)/GAMMA)
+
+         BC = -(2.D0/PI)*BETA_DM
+     &         *DSIN(PI*N(I)/BETA)*DCOS(PI*M(I)/GAMMA)
+     &       + 2.D0*(N(I)*BETA_DM/BETA)
+     &         *DCOS(PI*N(I)/BETA)*DCOS(PI*M(I)/GAMMA)
+     &       + 2.D0*BETA*(1.D0/GAMMA - M(I)*GAMMA_DM/GAMMA**2)
+     &         *DSIN(PI*N(I)/BETA)*DSIN(PI*M(I)/GAMMA)
+
+         VC = T*VC - U0*N(I)/2.D0
+     &        + 2.D0*T*DCOS(PI*N(I)/2.D0)*DCOS(PI*M(I)/2.D0)
+
+         VXC(I) = VXC(I) + S*VC
+         VHXC(I) = VHXC(I) + S*VC
+
+         IF (M(I).GT.1.D-15) THEN
+         BCX = T*BC*MX(I)/M(I) + U0*MX(I)/2.D0
+     &       - 2.D0*T*DSIN(PI*N(I)/2.D0)*DSIN(PI*M(I)/2.D0)*MX(I)/M(I)
+
+         BCY = T*BC*MY(I)/M(I) + U0*MY(I)/2.D0
+     &       - 2.D0*T*DSIN(PI*N(I)/2.D0)*DSIN(PI*M(I)/2.D0)*MY(I)/M(I)
+
+         BCZ = T*BC*MZ(I)/M(I) + U0*MZ(I)/2.D0
+     &       - 2.D0*T*DSIN(PI*N(I)/2.D0)*DSIN(PI*M(I)/2.D0)*MZ(I)/M(I)
+
+         BXCX(I) = BXCX(I) + BCX
+         BXCY(I) = BXCY(I) + BCY
+         BXCZ(I) = BXCZ(I) + BCZ
+         ENDIF
+
+1     CONTINUE
+
+      EC = 0.D0
+      DO 55 I=1,sites
+         EC = EC + ECD(I)
+55    CONTINUE
+
+      END subroutine
+
+****************************************************************************
 
       subroutine interHam(v,U0,U1,ham)
       implicit none
@@ -755,8 +1442,6 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
       complex(8) :: Bp(sites),Bm(sites)
 
       ham = ZERO
-
-*!!!!!     nb=intd
 
       DO I=1,sites
         BP(I) = (v(sites+i)*ONE + v(sites*2+I)*IONE)/DSQRT(2.D0)
