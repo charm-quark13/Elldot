@@ -7,7 +7,7 @@
       real(kind=8), parameter :: t=0.5d0
 
       integer :: number,rest,xc,corr
-      real(8) :: ntarget(dim*2),En(dim),mix,tol,U0,U1
+      real(8) :: ntarget(dim*2),En(dim),U0,U1
       complex(8) :: hmat(dim,dim)
 !      real(8) :: tBx(sites), tBy(sites), tBz(sites)
       complex(8) :: sig(spin*4,spin*4)
@@ -33,12 +33,12 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
 ***   one magnetic potential to zero, as the magnetizations of the two sites
 ***   must satisfy: |vec(m_1)| = |vec(m_2)|.
 
-!      v(1) = 0.d0
-      v(7) = 0.d0
+      v(sites-1) = 0.d0
+!      v(7) = 0.d0
 
 C  Recalculating the eigenvectors through exact diagonalization of the Hamiltonian.
 !      call hbuild(v,hmat)
-      call XcIterator(xc,v,U0,U1,hmat)
+      call XcIterator(v,hmat)
       dens = 0.d0
 
       call densvec(dens,hmat)
@@ -728,20 +728,22 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
       end subroutine hbuild
 
 ***************************************************************************
-      subroutine XcIterator(xc,v,U0,U1,ham)
+      subroutine XcIterator(v,ham)
       implicit none
 
-      integer,intent(in) :: xc
-      real(8),intent(in) :: U0,U1
       real(8),intent(inout) :: v(dim*2)
-      complex(8),intent(out) :: ham(intd,intd)
+      complex(8),intent(out) :: ham(dim,dim)
 
-      integer :: i,j,k,iter,maxit
-      real(8) :: VXC(sites),ec,eold
+      real(8),parameter :: mix=0.1d0
+
+      integer :: i,j,k,iter,maxit,ntol
+      real(8) :: VXC(sites),ec,eold,toltest,tol,eh,evxc,ex,exc,etot
       real(8) :: vhxc(sites),bxcy(sites),bxcx(sites),bxcz(sites)
+      real(8) :: vc(dim*2)
       real(8) :: vhxco(sites),bxcyo(sites),bxcxo(sites),bxczo(sites)
       real(8) :: nks(dim*2),tt(3),tx(sites),ty(sites),tz(sites)
 
+      TOL = 1.D-12
       maxit = 10000
       iter = 1
       eold = .1d0
@@ -765,23 +767,14 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
             REWIND 2
         ENDIF
 
-        if (iter /= maxit.or.
+        call hbuild(v,ham)
 
-  DABS((En(1)- EOLD)/EOLD).GT.TOL) then
+        do while (iter.le.maxit+1.and.(DABS((En(1)- EOLD)/EOLD).GT.TOL))
+          eold = en(1)
 
-          WRITE(*,*)
-          WRITE(*,*)'************',iter,'*************'
-          WRITE(*,*)
-
-          DO 3 I=1,sites
-            V(I) = V(I) + VHXC(I)
-            v(sites+I) = v(sites+I) + BXCX(I)
-            v(sites*2+I) = v(sites*2+I) + BXCY(I)
-            v(sites*3+I) = v(sites*3+I) + BXCZ(I)
-3         CONTINUE
-
-          call hbuild(v,ham)
-          call densvec(nks,ham)
+!          WRITE(*,*)
+!          WRITE(*,*)'************',iter,'*************'
+!          WRITE(*,*)
 
           DO 24 I=1,sites
             VHXCO(I) = VHXC(I)
@@ -821,22 +814,142 @@ C         STOP
              BXCZ(I) = MIX*BXCZ(I) + (1.D0-MIX)*BXCZO(I)
 23        CONTINUE
 
+          DO 3 I=1,sites
+            Vc(I) = V(I) + VHXC(I)
+            vc(sites+I) = v(sites+I) + BXCX(I)
+            vc(sites*2+I) = v(sites*2+I) + BXCY(I)
+            vc(sites*3+I) = v(sites*3+I) + BXCZ(I)
+3         CONTINUE
 
+!          write(*,*)
+!          write(*,vector) v
+!          write(*,*) '^^^^^ v ^^^^^'
 
-        endif
+          call hbuild(vc,ham)
+          call densvec(nks,ham)
 
+!          write(*,*)
+!          write(*,vector) nks
+!          write(*,*) '^^^^^ nks ^^^^^'
 
+          if (iter == maxit) then
+            write(*,*) 'Maximum iterations reached without convergence.'
+            write(*,*) 'Restart calculation?'
+            write(*,*) '0 == no .. 1 == yes .. 2 == yes w/ new tol'
+            read(*,*) ntol
+            if (ntol == 0) then
+              call exit(1)
+            elseif (ntol == 1) then
+              iter = 0
+            elseif (ntol == 2) then
+              iter = 0
+              call TolTry(toltest,tol)
+            end if
+          end if
 
+          iter = iter + 1
 
-        if (iter.eq.maxit) then
-          write(*,*) 'Maximum iterations reached with no convergence.'
-          write(*,*) 'Please restart the calculation.'
-          call exit(-1)
-        end if
+        end do
+
+!      DO 82 I=1,sites
+!82    WRITE(*,*)real(VXC(I)),real(BXCX(I)),real(BXCY(I)),real(BXCZ(I))
+
+      EH = 0.D0
+      DO 85 I=1,sites
+         EH = EH - 0.5D0*U0*Nks(I)**2
+85    CONTINUE
+
+      DO 86 I=1,sites-1
+         EH = EH - U1*Nks(I)*Nks(I+1)
+86    CONTINUE
+
+      EVXC = 0.D0
+      DO 90 I=1,sites
+90       EVXC = EVXC-Nks(I)*VXC(I)-nks(sites+I)*BXCX(I)
+     &         -nks(2*sites+I)*BXCY(I)-nks(3*sites+I)*BXCZ(I)
+
+      CALL EX_CALC(ham,EX)
+
+      IF (XC.EQ.1.OR.XC.EQ.2) THEN
+        EXC = EX
+      ELSEIF (XC.EQ.3) THEN
+        EXC = EX + EC
+      ENDIF
+
+      ETOT = En(1) + En(2) + EH + EVXC + EXC
+
+!      WRITE(*,*)' EKS = ',En(1) + En(2)
+!      WRITE(*,*)'  EH = ',EH
+!      WRITE(*,*)'EVXC = ',EVXC
+!      WRITE(*,*)' EXC = ',EXC
+!      WRITE(*,*)
+!      WRITE(*,*)'ETOT = ',real(ETOT)
+
+!      WRITE(*,*)
+!      WRITE(*,*)'(xc torque)_x    (xc torque)_y    (xc torque)_z'
+      DO 95 I=1,sites
+95       WRITE(*,*)real(TX(I)),' ',real(TY(I)),' ',real(TZ(I))
+      WRITE(*,*)'-----------------------------------------'
+      WRITE(*,*)real(TT(1)),' ',real(TT(2)),' ',real(TT(3))
+      WRITE(*,*)
 
       end if
 
       end subroutine XcIterator
+
+*************************************************************************
+      SUBROUTINE EX_CALC(M,EX)
+      IMPLICIT NONE
+
+      integer(8) :: I,TAU,SIGMA
+      complex(8) :: M(2*sites,2*sites),
+     &           GAMMA(2,2,sites,sites),PHI(2*sites,2,sites)
+      real(8) :: EX
+
+      CALL GCALC(M,PHI,GAMMA)
+
+      EX = 0.D0
+      DO 10 I=1,sites
+      DO 10 TAU=1,2
+      DO 10 SIGMA=1,2
+         EX = EX -
+     &         dreal(0.5D0*U0*GAMMA(SIGMA,TAU,I,I)*GAMMA(TAU,SIGMA,I,I))
+10    CONTINUE
+
+      DO 20 I=1,sites-1
+      DO 20 TAU=1,2
+      DO 20 SIGMA=1,2
+         EX = EX -
+     &         dreal(U1*GAMMA(SIGMA,TAU,I,I+1)*GAMMA(TAU,SIGMA,I+1,I))
+20    CONTINUE
+
+      end subroutine
+
+*************************************************************************
+
+      SUBROUTINE TolTry(ttol,otol)
+      implicit none
+
+      real(8) :: ttol,otol
+
+      write(*,*) 'Enter new tolerance parameter.'
+      write(*,*) 'Must be larger than:',otol
+      read(*,*) ttol
+
+      if ((ttol-otol).lt.0.d0) then
+        write(*,*) 'New tolerance smaller than old parameter.'
+        write(*,*) 'Enter new tolerance parameter.'
+        read(*,*) ttol
+      end if
+
+      if ((ttol-otol).lt.0.d0) then
+        write(*,*) 'Parameter still wrong. Exiting...'
+        call exit(1)
+      else
+        otol = ttol
+      end if
+
+      end subroutine
 
 *************************************************************************
 
