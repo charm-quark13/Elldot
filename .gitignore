@@ -1,5 +1,7 @@
+/Hubbard/a.out
 a.out
 fort.*
+*.png
 *.cube
 *.cub
 *.aux
@@ -9,3 +11,4 @@ fort.*
 *.mod
 *.swp
 /Hubbard/Carsten-Hub/*
+/Hubbard/4pt-Lattice-Data/*

@@ -2,11 +2,11 @@
 
       IMPLICIT NONE
 
-      integer,parameter :: spin=2, sites = 4, occ=2
+      integer,parameter :: spin=2, sites=4, occ=2
       integer, parameter :: dim=spin*sites, intd=2*sites**2-sites
       real(kind=8), parameter :: t=0.5d0
 
-      integer :: number,rest,xc,corr
+      integer :: number,rest,xc,corr,flag
       real(8) :: ntarget(dim*2),En(dim)
       complex(8) :: hmat(dim,dim)
 !      real(8) :: tBx(sites), tBy(sites), tBz(sites)
@@ -15,7 +15,7 @@
       complex(8), parameter :: IOne = (0.d0,1.d0)
 
       character(20) :: intprint,dmat
-      character (len=30) :: matrix, matprint, vector
+      character (len=30) :: matrix, tprint, vector
 
       contains
 
@@ -33,9 +33,11 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
 ***   one magnetic potential to zero, as the magnetizations of the two sites
 ***   must satisfy: |vec(m_1)| = |vec(m_2)|.
 
-      v(sites-1) = 0.d0
-!      v(7) = 0.d0
+      v(2) = 0.d0
 
+      if (flag.eq.1) then
+        v(sites+2) = 0.25d0
+      end if
 C  Recalculating the eigenvectors through exact diagonalization of the Hamiltonian.
       call hbuild(v,hmat)
       dens = 0.d0
@@ -823,11 +825,17 @@ C**------------------------------------------------------------
       DO I=1,sites-1
          DO J=I+1,sites
             II = II + 3
-            ham(II-1,II-1) = V(I) + V(J) + U1
+            ham(II-1,II-1) = V(I) + V(J)
      &                          + v(sites*3+I) + v(sites*3+J)
-            ham(II,II) =  V(I) + V(J) + U1
-            ham(II+1,II+1) = V(I) + V(J) + U1
+            ham(II,II) =  V(I) + V(J)
+            ham(II+1,II+1) = V(I) + V(J)
      &                          - v(sites*3+I) - v(sites*3+J)
+
+            IF ((J-I).EQ.1) THEN
+               ham(II-1,II-1) = ham(II-1,II-1) + U1
+               ham(II,II) = ham(II,II) + U1
+               ham(II+1,II+1) = ham(II+1,II+1) + U1
+            ENDIF
 
             ham(II-1,II) = BM(I) + BM(J)
             ham(II,II-1) = BP(I) + BP(J)
@@ -1025,12 +1033,52 @@ C**------------------------------------------------------------
       end subroutine Pauli
 
 ****************************************************************************
+
+      subroutine StepMin(steps, dx, v, ftol, iter, fret, fretlo)
+      implicit none
+
+      integer, intent(in) :: steps
+      integer, intent(out) :: iter
+      real(8), intent(in) :: dx
+      real(8), intent(out) :: ftol
+      real(8), intent(inout) :: v(dim*2), fret, fretlo
+
+      integer :: i, j, pass
+      real(8) :: vstart(dim*2), vprev(dim*2)
+
+      do pass = 1, steps
+        do i = 1, dim*2
+          v(i) = vstart(i) + steps*dx
+          call frprmn(v, dim*2, ftol, iter, fret)
+          if (fret<fretlo) then
+            fretlo = fret
+          end if
+          if (fretlo<1d-14) return
+        end do
+
+        vprev = vstart
+        v = vstart
+        do i = 1, dim*2-1
+          do j = i+1, dim*2
+            v = vprev
+            v(i) = v(i) + steps*dx
+            v(j) = v(j) + steps*dx
+            call frprmn(v, dim*2, ftol, iter, fret)
+            if (fretlo<1d-14) return
+          end do
+          vprev(i) = vstart(i) + steps*dx
+        end do
+      end do
+
+      end subroutine
+
+****************************************************************************
 ****  Numerical Recipes subroutines and functions                       ****
 ****************************************************************************
         SUBROUTINE frprmn(p,n,ftol,iter,fret)
         INTEGER iter,n,NMAX,ITMAX
         REAL (8) :: fret,ftol,p(n),EPS
-        PARAMETER (NMAX=50,ITMAX=10000000,EPS=1.d-12)
+        PARAMETER (NMAX=50,ITMAX=1000000,EPS=1.d-10)
 cU    USES dfunc,func,linmin
         INTEGER its,j
         REAL (8) :: dgg,fp,gam,gg,g(NMAX),h(NMAX),xi(NMAX)

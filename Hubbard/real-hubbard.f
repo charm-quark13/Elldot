@@ -141,7 +141,7 @@ C  as portability of the code to future programs.
         if (it.eq.1) then
           write(100,*) 'U','xc torque 1', 'xc torque 2'
         end if
-        write(*,*) u,txc1,-txc2
+        write(100,*) u,txc1,-txc2
 !        write(*,vector) tau1
 !        write(*,*) '******'
 !        write(*,vector) tau2
