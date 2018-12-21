@@ -10,5 +10,8 @@ fort.*
 *.log
 *.mod
 *.swp
+*.png
+*.txt
 /Hubbard/Carsten-Hub/*
 /Hubbard/4pt-Lattice-Data/*
+/Hubbard/*/

@@ -35,9 +35,9 @@ C  In this case, func = \int (n{v(x)} - ntarget{v(x)})**2 dx
 
       v(2) = 0.d0
 
-      if (flag.eq.1) then
-        v(sites+2) = 0.25d0
-      end if
+!      if (flag.eq.1) then
+!        v(sites+2) = 0.25d0
+!      end if
 C  Recalculating the eigenvectors through exact diagonalization of the Hamiltonian.
       call hbuild(v,hmat)
       dens = 0.d0
@@ -920,7 +920,102 @@ C**------------------------------------------------------------
 
       end subroutine
 
-***************************************************************************
+***********************************************************************
+
+      subroutine blong(den,v,v0,mm,blx,bly,blz)
+      implicit none
+
+      real(8),intent(in) :: den(dim*2),v(dim*2),v0(dim*2)
+      real(8),intent(out) :: mm(sites),blx(sites),bly(sites),
+     &                       blz(sites)
+
+      integer :: I,x,y,z
+
+      real(8) :: bxcx(sites),bxcy(sites),bxcz(sites),
+     &           mx(sites),my(sites),mz(sites),mdotb(sites)
+
+      x = sites
+      y = 2*sites
+      z = 3*sites
+
+      bxcx = 0.d0
+      bxcy = 0.d0
+      bxcz = 0.d0
+
+      do i = 1,sites
+        bxcx(i) = v(x+i) - v0(x+i)
+        bxcy(i) = v(y+i) - v0(y+i)
+        bxcz(i) = v(z+i) - v0(z+i)
+        mx(i) = den(x+i)
+        my(i) = den(y+i)
+        mz(i) = den(z+i)
+      end do
+
+      do i = 1,sites
+        mm(i) = dsqrt(mx(i)**2 + my(i)**2 + mz(i)**2)
+      end do
+
+      do i = 1, sites
+        mdotb(i) = mx(i)*bxcx(i) + my(i)*BXCY(I) + mz(i)*bxcz(i)
+      end do
+
+      do i = 1, sites
+        blx(i) = mdotb(i)*mx(i)/mm(i)**2
+        bly(i) = mdotb(i)*my(i)/mm(i)**2
+        blz(i) = mdotb(i)*mz(i)/mm(i)**2
+      end do
+
+      end subroutine
+
+**************************************************************************
+
+      subroutine bpar(den,v,v0,mm,blx,bly,blz)
+      implicit none
+
+      real(8),intent(in) :: den(dim*2),v(dim*2),v0(dim*2)
+      real(8),intent(out) :: mm(sites),blx(sites),bly(sites),
+     &                       blz(sites)
+
+      integer :: I,x,y,z
+
+      real(8) :: bxcx(sites),bxcy(sites),bxcz(sites),
+     &           mx(sites),my(sites),mz(sites),bmag(sites)
+
+      x = sites
+      y = 2*sites
+      z = 3*sites
+
+      bxcx = 0.d0
+      bxcy = 0.d0
+      bxcz = 0.d0
+
+      do i = 1,sites
+        bxcx(i) = v(x+i) - v0(x+i)
+        bxcy(i) = v(y+i) - v0(y+i)
+        bxcz(i) = v(z+i) - v0(z+i)
+        mx(i) = den(x+i)
+        my(i) = den(y+i)
+        mz(i) = den(z+i)
+      end do
+
+      do i = 1,sites
+        mm(i) = dsqrt(mx(i)**2 + my(i)**2 + mz(i)**2)
+      end do
+
+      do i = 1, sites
+        bmag(i) = dsqrt(bxcx(i)**2 + BXCY(I)**2 + bxcz(i)**2)
+      end do
+
+      do i = 1, sites
+        blx(i) = bmag(i)*mx(i)/mm(i)**2
+        bly(i) = bmag(i)*my(i)/mm(i)**2
+        blz(i) = bmag(i)*mz(i)/mm(i)**2
+      end do
+
+      end subroutine
+
+**************************************************************************
+
       subroutine tcalc (den,v,v0,torq,tx,ty,tz)
       implicit none
 
@@ -1078,7 +1173,7 @@ C**------------------------------------------------------------
         SUBROUTINE frprmn(p,n,ftol,iter,fret)
         INTEGER iter,n,NMAX,ITMAX
         REAL (8) :: fret,ftol,p(n),EPS
-        PARAMETER (NMAX=50,ITMAX=1000000,EPS=1.d-10)
+        PARAMETER (NMAX=50,ITMAX=100000,EPS=1.d-10)
 cU    USES dfunc,func,linmin
         INTEGER its,j
         REAL (8) :: dgg,fp,gam,gg,g(NMAX),h(NMAX),xi(NMAX)
