@@ -60,17 +60,17 @@ C  as portability of the code to future programs.
         Bz(3) = dble(bmag/10.d0)
         Bz(4) = dble(bmag/10.d0)
 
-        write(mwn,'(a,i1,a)') '4pt-B', bmag, '-BLong-n.txt'
-        write(mwx,'(a,i1,a)') '4pt-B', bmag, '-BLong-mx.txt'
-        write(mwy,'(a,i1,a)') '4pt-B', bmag, '-BLong-my.txt'
-        write(mwz,'(a,i1,a)') '4pt-B', bmag, '-BLong-mz.txt'
-        write(met,'(a,i1,a)') '4pt-B', bmag, '-Metric.txt'
+        write(mwn,'(a,i1,a)') '4pt-B', bmag, '-BRot-n.txt'
+        write(mwx,'(a,i1,a)') '4pt-B', bmag, '-BRot-mx.txt'
+        write(mwy,'(a,i1,a)') '4pt-B', bmag, '-BRot-my.txt'
+        write(mwz,'(a,i1,a)') '4pt-B', bmag, '-BRot-mz.txt'
+!        write(met,'(a,i1,a)') '4pt-B', bmag, '-Metric.txt'
 !        write(*,*) mwn, mwx, mwy, mwz
 ***************************************************************************
 ***   Setting the initial potentials which will generate our target density.
 ***************************************************************************
 
-        open(200,file = met)
+!        open(200,file = met)
         open(100,file = mwn)
         open(101,file = mwx)
         open(102,file = mwy)
@@ -150,9 +150,11 @@ C  as portability of the code to future programs.
 
           end if
 
-          if (fret.gt.1d-6) then
+          if (fret.gt.1d-12) then
             call StepMin(steps, dx, v, ftol, iter, fret, fretlo)
             vlo = v
+            write(*,*) '*******************************'
+            write(*,*) iter, ftol, fret
           end if
 
           vprev = vlo
@@ -191,9 +193,9 @@ C  as portability of the code to future programs.
           call metric(bmet,btx,bty,btz,vlo,vstart)
 
 !          call blong(dens,v,vstart,bl,blx,bly,blz)
-          call blong(dens,vlo,vstart,bl,blx,bly,blz)
+!          call blong(dens,vlo,vstart,bl,blx,bly,blz)
 
-!          call bpar(dens,vlo,vstart,bl,blx,bly,blz)
+          call bpar(dens,vlo,vstart,bl,blx,bly,blz)
 
           vtest = vlo
           do i=1,sites
@@ -241,7 +243,7 @@ C  as portability of the code to future programs.
             mags(i+1) = dens(sites+i)
           end do
 
-          write(200,*) u0,bmet,fret!,iter
+!          write(200,*) u0,bmet,fret!,iter
           !write(*,*) u0,bmet
 
           write(*,*) '*** end of loop ***'
@@ -253,7 +255,7 @@ C  as portability of the code to future programs.
         close(101)
         close(102)
         close(103)
-        close(200)
+!        close(200)
 
       end do
 

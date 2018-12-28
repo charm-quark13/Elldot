@@ -1173,7 +1173,7 @@ C**------------------------------------------------------------
         SUBROUTINE frprmn(p,n,ftol,iter,fret)
         INTEGER iter,n,NMAX,ITMAX
         REAL (8) :: fret,ftol,p(n),EPS
-        PARAMETER (NMAX=50,ITMAX=100000,EPS=1.d-10)
+        PARAMETER (NMAX=50,ITMAX=150000,EPS=1.d-10)
 cU    USES dfunc,func,linmin
         INTEGER its,j
         REAL (8) :: dgg,fp,gam,gg,g(NMAX),h(NMAX),xi(NMAX)
@@ -1207,8 +1207,12 @@ C         dgg=dgg+xi(j)**2
             xi(j)=h(j)
 13      continue
 14    continue
-        pause 'frprmn maximum iterations exceeded'
+
+      if (iter.eq.itmax) then
+        write(*,*) 'frprmn maximum iterations exceeded'
         return
+      end if
+
       END subroutine
 C  (C) Copr. 1986-92 Numerical Recipes Software 6?6>)AY.
 ****************************************************************************
