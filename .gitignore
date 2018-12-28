@@ -12,6 +12,7 @@ fort.*
 *.swp
 *.png
 *.txt
+*.gif
+*.tar
+*.zip
 /Hubbard/Carsten-Hub/*
-/Hubbard/4pt-Lattice-Data/*
-/Hubbard/*/

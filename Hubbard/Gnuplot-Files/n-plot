@@ -1,0 +1,17 @@
+set terminal pngcairo size 950,670 
+set ylabel 'Absolute Difference'
+set yrange [0:.035]
+set xlabel 'U_0'
+
+do for [j=1:9] {
+
+  set title '4-Point Lattice Absolute Difference Between B-Total and B-Longitudinal w/ Magnitude = .'.j
+
+  set output '4pt-Diff-n-'.j.'.png'
+
+  p '4pt-B'.j.'-BDiff-n.txt' u 1:2 w l lc rgb 'dark-blue' lw 2
+
+  set output
+
+} 
+
