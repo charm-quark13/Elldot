@@ -18,7 +18,7 @@ C  as portability of the code to future programs.
       real(8) :: tau(3),tx(sites),ty(sites),tz(sites),tplot(sites+1),
      &           bt(sites),btx(sites),bty(sites),btz(sites),
      &           bl(sites),blx(sites),bly(sites),blz(sites),
-     &           bmet, dx
+     &           bmet, dx, ap(sites), bta(sites), gm(sites)
 
       character(20) :: mwx, mwy, mwz, mwn, met
 
@@ -206,6 +206,8 @@ C  as portability of the code to future programs.
 
           call hbuild(vtest,hlong)
           call densvec(longd,hlong)
+
+          call CalcAngle(ap, bta, gm, dens, longd)
 
           do i=1, sites
 !            tplot(i+1) = dens(i)

@@ -1016,6 +1016,28 @@ C**------------------------------------------------------------
 
 **************************************************************************
 
+      subroutine CalcAngle(a, b, g, exden, ksden)
+      implicit none
+
+      real(8), intent(in) :: exden(dim*2), ksden(dim*2)
+      real(8), intent(out) :: a(sites), b(sites), g(sites)
+
+      integer :: i, x, y, z
+
+      x = sites
+      y = sites*2
+      z = sites*3
+
+      do i = 1, sites
+        a(i) = ACOS(exden(x+i)/ksden(x+i))
+        b(i) = ACOS(exden(y+i)/ksden(y+i))
+        g(i) = ACOS(exden(z+i)/ksden(z+i))
+      end do
+      
+      end subroutine
+
+**************************************************************************
+
       subroutine tcalc (den,v,v0,torq,tx,ty,tz)
       implicit none
 
