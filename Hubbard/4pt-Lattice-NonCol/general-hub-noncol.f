@@ -18,7 +18,8 @@ C  as portability of the code to future programs.
       real(8) :: tau(3),tx(sites),ty(sites),tz(sites),tplot(sites+1),
      &           bt(sites),btx(sites),bty(sites),btz(sites),
      &           bl(sites),blx(sites),bly(sites),blz(sites),
-     &           bmet, dx
+     &           bmet, dx, ap(sites), bta(sites), gm(sites),
+     &           theta(sites)
 
       character(30) :: mwx, mwy, mwz, mwn, met
 
@@ -38,7 +39,7 @@ C  as portability of the code to future programs.
       by = 0.d0
       bz = 0.d0
 
-      do bmag = 1, 1
+      do bmag = 1, 9
 
         v(1) = 1.d0
         do i = 2, 3
@@ -200,6 +201,16 @@ C  as portability of the code to future programs.
           call hbuild(vtest,hlong)
           call densvec(longd,hlong)
 
+          call CalcAngle(theta, dens, longd)
+
+          write(mwx,'(a,i1,a)') '4pt-B', bmag, '-CNC-theta.txt'
+!          write(mwy,'(a,i1,a)') '4pt-B', bmag, '-CNC-yangle.txt'
+!          write(mwz,'(a,i1,a)') '4pt-B', bmag, '-CNC-zangle.txt'
+
+          open(201,file = mwx)
+!          open(202,file = mwy)
+!          open(203,file = mwz)
+
           do i=1, sites
 !            tplot(i+1) = dens(i)
             tplot(i+1) = longd(i)
@@ -213,16 +224,31 @@ C  as portability of the code to future programs.
           write(101,tprint) tplot
 
           do i=1, sites
+            tplot(i+1) = theta(i)
+          end do
+          write(201,tprint) tplot
+
+          do i=1, sites
 !            tplot(i+1) = dens(sites*2 + i)
             tplot(i+1) = longd(sites*2 + i)
           end do
           write(102,tprint) tplot
+
+!          do i=1, sites
+!            tplot(i+1) = bta(i)
+!          end do
+!          write(202,tprint) tplot
 
           do i=1, sites
 !            tplot(i+1) = dens(sites*3 + i)
             tplot(i+1) = longd(sites*3 + i)
           end do
           write(103,tprint) tplot
+
+!          do i=1, sites
+!            tplot(i+1) = gm(i)
+!          end do
+!          write(203,tprint) tplot
 
           mags(1) = u0
           do i=1, sites
@@ -248,6 +274,7 @@ C  as portability of the code to future programs.
         close(101)
         close(102)
         close(103)
+        close(201)
 !        close(200)
 
       end do

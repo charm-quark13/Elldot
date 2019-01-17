@@ -1100,6 +1100,44 @@ C**------------------------------------------------------------
 
       end subroutine
 
+*************************************************************
+
+      subroutine CalcAngle(tta, exden, ksden)
+      implicit none
+
+      real(8), intent(in) :: exden(dim*2), ksden(dim*2)
+      real(8), intent(out) :: tta(sites)
+
+      integer :: i, x, y, z
+      real(8) :: exmm(sites), ksmm(sites), xmx(sites),
+     &           xmy(sites), xmz(sites), kmx(sites), kmy(sites),
+     &           kmz(sites), mdot(sites)
+
+      x = sites
+      y = sites*2
+      z = sites*3
+
+      do i = 1, sites
+        xmx(i) = exden(x + i)
+        xmy(i) = exden(y + i)
+        xmz(i) = exden(z + i)
+        kmx(i) = ksden(x + i)
+        kmy(i) = ksden(y + i)
+        kmz(i) = ksden(z + i)
+      end do
+
+      do i = 1, sites
+        exmm(i) = dsqrt(xmx(i)**2 + xmy(i)**2 + xmz(i)**2)
+        ksmm(i) = dsqrt(kmx(i)**2 + kmy(i)**2 + kmz(i)**2)
+        mdot(i) = xmx(i)*kmx(i) + xmy(i)*kmy(i) + xmz(i)*kmz(i)
+      end do
+
+      do i = 1, sites
+        tta(i) = ACOS(mdot(i)/(exmm(i)*ksmm(i)))
+      end do
+
+      end subroutine
+
 ***************************************************************************
       subroutine Pauli(sigma)
       implicit none
