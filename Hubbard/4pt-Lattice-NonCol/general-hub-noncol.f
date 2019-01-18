@@ -15,7 +15,7 @@ C  as portability of the code to future programs.
      &           vstart(dim*2),v(dim*2),dens(dim*2),vprev(dim*2),
      &           longd(dim*2)
       complex(8) :: htest(intd,intd),hlong(dim,dim)
-      real(8) :: tau(3),tx(sites),ty(sites),tz(sites),tplot(sites+1),
+      real(8) :: tau(3),tx(sites),ty(sites),tz(sites),tplot(sites+2),
      &           bt(sites),btx(sites),bty(sites),btz(sites),
      &           bl(sites),blx(sites),bly(sites),blz(sites),
      &           bmet, dx, ap(sites), bta(sites), gm(sites),
@@ -34,12 +34,22 @@ C  as portability of the code to future programs.
       dx = 1d-5
       steps = 5
 
-      v = 0.d0
-      Bx = 0.d0
-      by = 0.d0
-      bz = 0.d0
+      write(mwn,'(a)') '4pt-CNC-Map-n.txt'
+      write(mwx,'(a)') '4pt-CNC-Map-x.txt'
+      write(mwy,'(a)') '4pt-CNC-Map-y.txt'
+      write(mwz,'(a)') '4pt-CNC-Map-z.txt'
 
-      do bmag = 1, 9
+      open(100,file = mwn)
+      open(101,file = mwx)
+      open(102,file = mwy)
+      open(103,file = mwz)
+
+      do bmag = 1, 11
+
+        v = 0.d0
+        Bx = 0.d0
+        by = 0.d0
+        bz = 0.d0
 
         v(1) = 1.d0
         do i = 2, 3
@@ -61,11 +71,19 @@ C  as portability of the code to future programs.
         Bz(3) = dble(bmag/10.d0)
         Bz(4) = dble(bmag/10.d0)
 
+        if (bmag.eq.11) then
 
-        write(mwn,'(a,i1,a)') '4pt-B', bmag, '-BRotCNC-n.txt'
-        write(mwx,'(a,i1,a)') '4pt-B', bmag, '-BRotCNC-mx.txt'
-        write(mwy,'(a,i1,a)') '4pt-B', bmag, '-BRotCNC-my.txt'
-        write(mwz,'(a,i1,a)') '4pt-B', bmag, '-BRotCNC-mz.txt'
+          Bx(1) = 10.d-3
+          Bx(2) = 10.d-3
+
+          By(2) = 10.d-3
+          By(3) = 10.d-3
+
+          Bz(3) = 10.d-3
+          Bz(4) = 10.d-3
+
+        end if
+
 !        write(met,'(a,i1,a)') '4pt-B', bmag, '-CNC-Metric.txt'
 !        write(*,*) mwn, mwx, mwy, mwz
 ***************************************************************************
@@ -73,10 +91,6 @@ C  as portability of the code to future programs.
 ***************************************************************************
 
 !        open(200,file = met)
-        open(100,file = mwn)
-        open(101,file = mwx)
-        open(102,file = mwy)
-        open(103,file = mwz)
 
         do i=1,sites
           v(sites+i) = Bx(i)
@@ -169,6 +183,8 @@ C  as portability of the code to future programs.
           call tcalc(dens,vlo,vstart,tau,tx,ty,tz)
 
           tplot(1) = u0
+          tplot(2) = bx(1)
+          write(*,*) tplot(2)
 
 !        open(200,file='4pt-YTorq-4BxBz-wStep.txt')
 !        write(200,tprint) tplot
@@ -187,9 +203,9 @@ C  as portability of the code to future programs.
           call metric(bmet,btx,bty,btz,vlo,vstart)
 
 !          call blong(dens,v,vstart,bl,blx,bly,blz)
-!          call blong(dens,vlo,vstart,bl,blx,bly,blz)
+          call blong(dens,vlo,vstart,bl,blx,bly,blz)
 
-          call bpar(dens,vlo,vstart,bl,blx,bly,blz)
+!          call bpar(dens,vlo,vstart,bl,blx,bly,blz)
 
           vtest = vlo
           do i=1,sites
@@ -203,52 +219,38 @@ C  as portability of the code to future programs.
 
           call CalcAngle(theta, dens, longd)
 
-          write(mwx,'(a,i1,a)') '4pt-B', bmag, '-CNC-theta.txt'
-!          write(mwy,'(a,i1,a)') '4pt-B', bmag, '-CNC-yangle.txt'
-!          write(mwz,'(a,i1,a)') '4pt-B', bmag, '-CNC-zangle.txt'
+!          write(mwx,'(a,i1,a)') '4pt-B', bmag, '-CNC-theta.txt'
 
-          open(201,file = mwx)
-!          open(202,file = mwy)
-!          open(203,file = mwz)
+!          open(201,file = mwx)
 
           do i=1, sites
-!            tplot(i+1) = dens(i)
-            tplot(i+1) = longd(i)
+            tplot(i+2) = dens(i) - longd(i)
+!            tplot(i+1) = longd(i)
           end do
           write(100,tprint) tplot
 
           do i=1, sites
-!            tplot(i+1) = dens(sites + i)
-            tplot(i+1) = longd(sites + i)
+            tplot(i+2) = dens(sites + i) - longd(sites + i)
+!            tplot(i+1) = longd(sites + i)
           end do
           write(101,tprint) tplot
 
           do i=1, sites
-            tplot(i+1) = theta(i)
+            tplot(i+2) = theta(i)
           end do
-          write(201,tprint) tplot
+!          write(201,tprint) tplot
 
           do i=1, sites
-!            tplot(i+1) = dens(sites*2 + i)
-            tplot(i+1) = longd(sites*2 + i)
+            tplot(i+2) = dens(sites*2 + i) - longd(sites*2 + i)
+!            tplot(i+1) = longd(sites*2 + i)
           end do
           write(102,tprint) tplot
 
-!          do i=1, sites
-!            tplot(i+1) = bta(i)
-!          end do
-!          write(202,tprint) tplot
-
           do i=1, sites
-!            tplot(i+1) = dens(sites*3 + i)
-            tplot(i+1) = longd(sites*3 + i)
+            tplot(i+2) = dens(sites*3 + i) - longd(sites*3 + i)
+!            tplot(i+1) = longd(sites*3 + i)
           end do
           write(103,tprint) tplot
-
-!          do i=1, sites
-!            tplot(i+1) = gm(i)
-!          end do
-!          write(203,tprint) tplot
 
           mags(1) = u0
           do i=1, sites
@@ -270,13 +272,15 @@ C  as portability of the code to future programs.
 !        write(*,*)
         end do
 
-        close(100)
-        close(101)
-        close(102)
-        close(103)
         close(201)
 !        close(200)
 
       end do
+
+      close(100)
+      close(101)
+      close(102)
+      close(103)
+
 
       end
