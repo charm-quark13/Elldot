@@ -23,7 +23,7 @@
 
       write(tprint,'(a, i3, a)') '(', np + 1, 'e16.6)'
 
-      corr = 0
+      corr = 1
       rest = 0
 
       do bmag = 1, 9
@@ -53,10 +53,10 @@
         Bz(3) = dble(bmag/10.d0)
         Bz(4) = dble(bmag/10.d0)
 
-        write(mwn,'(a,i1,a)') '4pt-B', bmag, '-Slater-n.txt'
-        write(mwx,'(a,i1,a)') '4pt-B', bmag, '-Slater-mx.txt'
-        write(mwy,'(a,i1,a)') '4pt-B', bmag, '-Slater-my.txt'
-        write(mwz,'(a,i1,a)') '4pt-B', bmag, '-Slater-mz.txt'
+        write(mwn,'(a,i1,a)') '4pt-B', bmag, '-SlaterWTC-n.txt'
+        write(mwx,'(a,i1,a)') '4pt-B', bmag, '-SlaterWTC-mx.txt'
+        write(mwy,'(a,i1,a)') '4pt-B', bmag, '-SlaterWTC-my.txt'
+        write(mwz,'(a,i1,a)') '4pt-B', bmag, '-SlaterWTC-mz.txt'
 
         do it = 1, 100
 
@@ -119,16 +119,16 @@ C**----------------------------------------------------------------------
 
 C**   do the xc torque correction
 
-        IF (CORR.EQ.1) THEN
-           WRITE(*,*)'total torque:'
-           WRITE(*,*)TT
-           WRITE(*,*)
-           CALL BCORR(MX,MY,MZ,BXCX,BXCY,BXCZ,TT)
-           CALL TCALC (TT,TX,TY,TZ,MX,MY,MZ,BXCX,BXCY,BXCZ)
-           WRITE(*,*)'total torque:'
-           WRITE(*,*)TT
-           WRITE(*,*)
-        ENDIF
+!        IF (CORR.EQ.1) THEN
+!           WRITE(*,*)'total torque:'
+!           WRITE(*,*)TT
+!           WRITE(*,*)
+!           CALL BCORR(MX,MY,MZ,BXCX,BXCY,BXCZ,TT)
+!           CALL TCALC (TT,TX,TY,TZ,MX,MY,MZ,BXCX,BXCY,BXCZ)
+!           WRITE(*,*)'total torque:'
+!           WRITE(*,*)TT
+!           WRITE(*,*)
+!        ENDIF
 
         DO 21 I=1,NP
            VHXC(I) = MIX*VHXC(I) + (1.D0-MIX)*VHXCO(I)
