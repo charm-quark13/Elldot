@@ -10,37 +10,56 @@
 
       write(bvector, '(a, i3, a)') '(', sites + 1, 'e16.6)'
 
-      dir(1) = 'mx'
-      dir(2) = 'my'
-      dir(3) = 'mz'
-      dir(4) = 'n'
+!      dir(1) = 'mx'
+!      dir(2) = 'my'
+!      dir(3) = 'mz'
+!      dir(4) = 'n'
 
-      do d = 1, 4
+      dir(1) = 'tx'
+      dir(2) = 'ty'
+      dir(3) = 'tz' 
 
-        do i = 1, 9
+      do d = 1, 3
 
-          write(FileList,'(a,i1,a,a,a)') '4pt-B', i, '-BRotCNC-',
+        do i = 1, 11
+
+          if (i.lt.10) then
+            write(FileList,'(a,i1,a,a,a)') '4pt-B', i, '-Exact-',
      &                                           trim(dir(d)), '.txt'
-          open(100, file = FileList)
+            open(100, file = FileList)
   
-          write(FileList,'(a,i1,a,a,a)') '4pt-B', i, '-BTot-',
+            write(FileList,'(a,i1,a,a,a)') '4pt-B', i, '-Slater-',
      &                                           trim(dir(d)), '.txt'
-          open(101, file = FileList)
+            open(101, file = FileList)
   
-          write(FileList,'(a,i1,a,a,a)') '4pt-B', i, '-BRot-Diff-',
+            write(FileList,'(a,i1,a,a,a)') '4pt-B', i, '-TDiff-',
      &                                           trim(dir(d)), '.txt'
-          open(102, file = FileList)
-  
+            open(102, file = FileList)
+          else
+            write(FileList,'(a,i2,a,a,a)') '4pt-B', i, '-Exact-',
+     &                                           trim(dir(d)), '.txt'
+            open(100, file = FileList)
+
+            write(FileList,'(a,i2,a,a,a)') '4pt-B', i, '-Slater-',
+     &                                           trim(dir(d)), '.txt'
+            open(101, file = FileList)
+
+            write(FileList,'(a,i2,a,a,a)') '4pt-B', i, '-TDiff-',
+     &                                           trim(dir(d)), '.txt'
+            open(102, file = FileList)
+          end if            
+
+
           do j=1, 100
-            read(100, bvector) BLong
+            read(100, bvector) BTot
   
-            read(101, bvector) BTot
+            read(101, bvector) BLong
   
             BDiff = 0.d0
             BDiff(1) = dble(j)/10.d0
             do k=2, sites + 1
               BDiff(k) = BTot(k) - BLong(k)
-              BDiff(k) = BDiff(k)/Btot(k) 
+!              BDiff(k) = BDiff(k)/Btot(k) 
             end do
   
             write(102, bvector) BDiff
