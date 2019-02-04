@@ -1016,7 +1016,7 @@ C**------------------------------------------------------------
 
 ***************************************************************************
 
-      subroutine tcalc (den,v,v0,torq,tx,ty,tz)
+      subroutine tcalc(den,v,v0,torq,tx,ty,tz)
       implicit none
 
       real(8),intent(in) :: den(dim*2),v(dim*2),v0(dim*2)
@@ -1057,6 +1057,37 @@ C**------------------------------------------------------------
         torq(1) = torq(1) + tx(i)
         torq(2) = torq(2) + ty(i)
         torq(3) = torq(3) + tz(i)
+      end do
+
+      END subroutine
+
+***************************************************************************
+
+      subroutine tortc(den, v0, textx, texty, textz)
+      implicit none
+
+      real(8),intent(in) :: den(dim*2), v0(dim*2)
+      real(8),intent(out) :: textx(sites),texty(sites),
+     &                       textz(sites)
+
+      integer :: I,x,y,z
+
+      real(8) :: mx(sites), my(sites), mz(sites)
+
+      x = sites
+      y = 2*sites
+      z = 3*sites
+
+      do i = 1,sites
+        mx(i) = den(x+i)
+        my(i) = den(y+i)
+        mz(i) = den(z+i)
+      end do
+
+      do i = 1, sites
+        textx(i) = (my(i)*v0(z+i) - mz(i)*v0(y+i))
+        texty(i) = (mz(i)*v0(x+i) - mx(i)*v0(z+i))
+        textz(i) = (mx(i)*v0(y+i) - my(i)*v0(x+i))
       end do
 
       END subroutine

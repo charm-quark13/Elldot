@@ -6,7 +6,8 @@ C  as portability of the code to future programs.
 
       Implicit none
 
-      integer :: i,j,k,iter,it,steps,bmag
+      integer :: i,j,k,iter,it,steps,bmag,
+     &           wxcflg, wdflg, wmflg, weflg, wextflg
 
       real(8) :: ftol,fret,fretlo,x
       real(8) :: Bx(sites), By(sites), Bz(sites),mags(sites+1)
@@ -18,13 +19,15 @@ C  as portability of the code to future programs.
       real(8) :: tau(3),tx(sites),ty(sites),tz(sites),tplot(sites+2),
      &           bt(sites),btx(sites),bty(sites),btz(sites),
      &           bl(sites),blx(sites),bly(sites),blz(sites),
-     &           bmet, dx, ap(sites), bta(sites), gm(sites),
-     &           theta(sites)
+     &           texx(sites), texy(sites), texz(sites),
+     &           bmet, dx, theta(sites), titer(sites+1)
 
-      character(30) :: mwx, mwy, mwz, mwn, met
+      character(30) :: mwx, mwy, mwz, mwn, met, twx, twy, twz,
+     &                 ttotwx, ttotwy, ttotwz, ttotp
 
       write(matrix,'(a, i3, a)') '(', dim, 'f14.8)'
       write(tprint,'(a, i3, a)') '(', sites + 1, 'e16.6)'
+      write(ttotp,'(a, i3, a)') '(', sites + 2, 'e16.6)'
       write(vector,'(a, i3, a)') '(', 1, 'f16.10)'
       write(intprint,'(a, i3, a)') '(', 6, 'e16.6)'
       write(dmat,'(a,i3,a)') '(', dim*2,'f14.10)'
@@ -34,17 +37,36 @@ C  as portability of the code to future programs.
       dx = 1d-5
       steps = 5
 
-      write(mwn,'(a)') '4pt-CNC-Map-n.txt'
-      write(mwx,'(a)') '4pt-CNC-Map-x.txt'
-      write(mwy,'(a)') '4pt-CNC-Map-y.txt'
-      write(mwz,'(a)') '4pt-CNC-Map-z.txt'
+      wextflg = 0
+      weflg = 1
+      wxcflg = 0
+      wdflg = 0
+      wmflg = 0
 
-      open(100,file = mwn)
-      open(101,file = mwx)
-      open(102,file = mwy)
-      open(103,file = mwz)
+      if (wmflg.eq.1) then
+
+        write(mwn,'(a)') '4pt-CNC-Map-n.txt'
+        write(mwx,'(a)') '4pt-CNC-Map-x.txt'
+        write(mwy,'(a)') '4pt-CNC-Map-y.txt'
+        write(mwz,'(a)') '4pt-CNC-Map-z.txt'
+
+        write(ttotwx,'(a)') '4pt-CNC-TorqT-x.txt'
+        write(ttotwy,'(a)') '4pt-CNC-TorqT-y.txt'
+        write(ttotwz,'(a)') '4pt-CNC-TorqT-z.txt'
+
+        open(100,file = mwn)
+        open(101,file = mwx)
+        open(102,file = mwy)
+        open(103,file = mwz)
+
+        open(201,file = ttotwx)
+        open(202,file = ttotwy)
+        open(203,file = ttotwz)
+
+      end if
 
       do bmag = 1, 11
+!      do bmag = 2, 10
 
         v = 0.d0
         Bx = 0.d0
@@ -57,30 +79,39 @@ C  as portability of the code to future programs.
         end do
         v(4) = 1.d0
 
-        Bx(1) = dble(bmag/10.d0)
-        Bx(2) = dble(bmag/10.d0)
-!        Bx(3) = .01d0
-!        Bx(4) = -.25d0
+!        Bx(1) = dble(bmag/10.d0)
+!        Bx(2) = dble(bmag/10.d0)
+        Bx(1) = dble(bmag/10.d1)
+        Bx(2) = dble(bmag/10.d1)
 
-!        Bx = 0.d0
-        By(2) = -dble(bmag/10.d0)
-        By(3) = -dble(bmag/10.d0)
+!        By(2) = -dble(bmag/10.d0)
+!        By(3) = -dble(bmag/10.d0)
+        By(2) = -dble(bmag/10.d1)
+        By(3) = -dble(bmag/10.d1)
 
-!        Bz(1) = -2.50d-1
-!        Bz(2) = 2.50d-2
-        Bz(3) = dble(bmag/10.d0)
-        Bz(4) = dble(bmag/10.d0)
+!        Bz(3) = dble(bmag/10.d0)
+!        Bz(4) = dble(bmag/10.d0)
+        Bz(3) = dble(bmag/10.d1)
+        Bz(4) = dble(bmag/10.d1)
+
+
 
         if (bmag.eq.11) then
 
-          Bx(1) = 10.d-3
-          Bx(2) = 10.d-3
+!          Bx(1) = 1.d-2
+!          Bx(2) = 1.d-2
+          Bx(1) = 1.d-3
+          Bx(2) = 1.d-3
 
-          By(2) = 10.d-3
-          By(3) = 10.d-3
+!          By(2) = -1.d-2
+!          By(3) = -1.d-2
+          By(2) = -1.d-3
+          By(3) = -1.d-3
 
-          Bz(3) = 10.d-3
-          Bz(4) = 10.d-3
+!          Bz(3) = 1.d-2
+!          Bz(4) = 1.d-2
+          Bz(3) = 1.d-3
+          Bz(4) = 1.d-3
 
         end if
 
@@ -181,6 +212,7 @@ C  as portability of the code to future programs.
 
 !          call tcalc(dens,v,vstart,tau,tx,ty,tz)
           call tcalc(dens,vlo,vstart,tau,tx,ty,tz)
+          call tortc(dens, vstart, texx, texy, texz)
 
           tplot(1) = u0
           tplot(2) = bx(1)
@@ -221,66 +253,260 @@ C  as portability of the code to future programs.
 
 !          write(mwx,'(a,i1,a)') '4pt-B', bmag, '-CNC-theta.txt'
 
+          if (wdflg.eq.1) then
+
+            if (bmag.lt.10) then
+              write(mwn,'(a,i1,a)') '4pt-B00', bmag, '-ExactXC-n.txt'
+              write(mwx,'(a,i1,a)') '4pt-B00', bmag, '-ExactXC-mx.txt'
+              write(mwy,'(a,i1,a)') '4pt-B00', bmag, '-ExactXC-my.txt'
+              write(mwz,'(a,i1,a)') '4pt-B00', bmag, '-ExactXC-mz.txt'
+            elseif (bmag.eq.10) then
+              write(mwn,'(a,i2,a)') '4pt-B00', bmag, '-ExactXC-n.txt'
+              write(mwx,'(a,i2,a)') '4pt-B00', bmag, '-ExactXC-mx.txt'
+              write(mwy,'(a,i2,a)') '4pt-B00', bmag, '-ExactXC-my.txt'
+              write(mwz,'(a,i2,a)') '4pt-B00', bmag, '-ExactXC-mz.txt'
+            elseif (bmag.eq.11) then
+              write(mwn,'(a)') '4pt-B0001-ExactXC-n.txt'
+              write(mwx,'(a)') '4pt-B0001-ExactXC-mx.txt'
+              write(mwy,'(a)') '4pt-B0001-ExactXC-my.txt'
+              write(mwz,'(a)') '4pt-B0001-ExactXC-mz.txt'
+            end if
+
+            open(30,file = mwn)
+            open(31,file = mwx)
+            open(32,file = mwy)
+            open(33,file = mwz)
+
+          end if
+
+          if (wxcflg.eq.1) then
+
+            if (bmag.lt.10) then
+              write(twx,'(a,i1,a)') '4pt-B00', bmag, '-ExactXC-tx.txt'
+              write(twy,'(a,i1,a)') '4pt-B00', bmag, '-ExactXC-ty.txt'
+              write(twz,'(a,i1,a)') '4pt-B00', bmag, '-ExactXC-tz.txt'
+            elseif (bmag.eq.10) then
+              write(twx,'(a,i2,a)') '4pt-B00', bmag, '-ExactXC-tx.txt'
+              write(twy,'(a,i2,a)') '4pt-B00', bmag, '-ExactXC-ty.txt'
+              write(twz,'(a,i2,a)') '4pt-B00', bmag, '-ExactXC-tz.txt'
+            else
+              write(twx,'(a)') '4pt-B0001-ExactXC-tx.txt'
+              write(twy,'(a)') '4pt-B0001-ExactXC-ty.txt'
+              write(twz,'(a)') '4pt-B0001-ExactXC-tz.txt'
+            end if
+
+            open(301,file = twx)
+            open(302,file = twy)
+            open(303,file = twz)
+
+          end if
+
 !          open(201,file = mwx)
 
-          do i=1, sites
-            tplot(i+2) = dens(i) - longd(i)
-!            tplot(i+1) = longd(i)
-          end do
-          write(100,tprint) tplot
+          titer(1) = u0
 
-          do i=1, sites
-            tplot(i+2) = dens(sites + i) - longd(sites + i)
-!            tplot(i+1) = longd(sites + i)
-          end do
-          write(101,tprint) tplot
+          if (wdflg.eq.1) then
+            do i=1, sites
+              titer(i+1) = longd(i)
+            end do
+            write(30,tprint) titer
+          end if
 
-          do i=1, sites
-            tplot(i+2) = theta(i)
-          end do
+          if (wmflg.eq.1) then
+            do i=1, sites
+              tplot(i+2) = dens(i) - longd(i)
+!              tplot(i+1) = longd(i)
+            end do
+
+            write(100,ttotp) tplot
+          endif
+
+
+          if (wmflg.eq.1) then
+            do i=1, sites
+              tplot(i+2) = dens(sites + i) - longd(sites + i)
+!              tplot(i+1) = longd(sites + i)
+            end do
+
+            write(101,ttotp) tplot
+
+            do i=1, sites
+              tplot(i+2) = tx(i)
+            end do
+            write(201,ttotp) tplot
+          endif
+
+          if (wdflg.eq.1) then
+            do i=1, sites
+              titer(i+1) = longd(sites + i)
+            end do
+            write(31,tprint) titer
+          end if
+
+          if (wxcflg.eq.1) then
+            do i=1, sites
+              titer(i+1) = tx(i)
+            end do
+            write(301,tprint) titer
+          end if
+
+!          do i=1, sites
+!            tplot(i+2) = theta(i)
+!          end do
 !          write(201,tprint) tplot
 
-          do i=1, sites
-            tplot(i+2) = dens(sites*2 + i) - longd(sites*2 + i)
-!            tplot(i+1) = longd(sites*2 + i)
-          end do
-          write(102,tprint) tplot
 
-          do i=1, sites
-            tplot(i+2) = dens(sites*3 + i) - longd(sites*3 + i)
-!            tplot(i+1) = longd(sites*3 + i)
-          end do
-          write(103,tprint) tplot
+          if (wmflg.eq.1) then
+            do i=1, sites
+              tplot(i+2) = dens(sites*2 + i) - longd(sites*2 + i)
+!              tplot(i+1) = longd(sites*2 + i)
+            end do
 
-          mags(1) = u0
-          do i=1, sites
-            mags(i+1) = dens(sites*3+i)
-          end do
-!        write(100,tprint) mags
+            write(102,tprint) tplot
 
-!        open(300,file='4pt-Symm-MxB4-wS.txt')
+            do i=1, sites
+              tplot(i+2) = ty(i)
+            end do
+            write(202,ttotp) tplot
 
-          do i=1, sites
-            mags(i+1) = dens(sites+i)
-          end do
+          end if
 
-!          write(200,*) u0,bmet,fret!,iter
-          !write(*,*) u0,bmet
+          if (wdflg.eq.1) then
+            do i=1, sites
+              titer(i+1) = longd(sites*2 + i)
+            end do
+            write(32,tprint) titer
+          end if
+
+          if (wxcflg.eq.1) then
+            do i=1, sites
+              titer(i+1) = ty(i)
+            end do
+            write(302,tprint) titer
+          end if
+
+          if (wmflg.eq.1) then
+            do i=1, sites
+              tplot(i+2) = dens(sites*3 + i) - longd(sites*3 + i)
+  !            tplot(i+1) = longd(sites*3 + i)
+            end do
+
+            write(103,tprint) tplot
+
+            do i=1, sites
+              tplot(i+2) = tz(i)
+            end do
+            write(203,ttotp) tplot
+          end if
+
+          if (wdflg.eq.1) then
+            do i=1, sites
+              titer(i+1) = longd(sites*3 + i)
+            end do
+            write(33,tprint) titer
+          end if
+
+          if (wxcflg.eq.1) then
+            do i=1, sites
+              titer(i+1) = tz(i)
+            end do
+            write(303,tprint) titer
+          end if
+
+          if (wextflg.eq.1) then
+
+            if (bmag.lt.10) then
+              write(twx,'(a,i1,a)') '4pt-B00', bmag, '-ExactExt-tx.txt'
+              write(twy,'(a,i1,a)') '4pt-B00', bmag, '-ExactExt-ty.txt'
+              write(twz,'(a,i1,a)') '4pt-B00', bmag, '-ExactExt-tz.txt'
+            elseif (bmag.eq.10) then
+              write(twx,'(a,i2,a)') '4pt-B00', bmag, '-ExactExt-tx.txt'
+              write(twy,'(a,i2,a)') '4pt-B00', bmag, '-ExactExt-ty.txt'
+              write(twz,'(a,i2,a)') '4pt-B00', bmag, '-ExactExt-tz.txt'
+            elseif (bmag.eq.11) then
+              write(twx,'(a)') '4pt-B0001-ExactExt-tx.txt'
+              write(twy,'(a)') '4pt-B0001-ExactExt-ty.txt'
+              write(twz,'(a)') '4pt-B0001-ExactExt-tz.txt'
+            end if
+
+            open(401,file = twx)
+            open(402,file = twy)
+            open(403,file = twz)
+
+            do i=1, sites
+              titer(i+1) = texx(i)
+            end do
+            write(401,tprint) titer
+
+            do i=1, sites
+              titer(i+1) = texy(i)
+            end do
+            write(402,tprint) titer
+
+            do i=1, sites
+              titer(i+1) = texz(i)
+            end do
+            write(403,tprint) titer
+
+          end if
+
+          if (weflg.eq.1) then
+
+            if (bmag.lt.10) then
+              write(twx,'(a,i1,a)') '4pt-B00', bmag, '-Exact-E.txt'
+            elseif (bmag.eq.10) then
+              write(twx,'(a,i2,a)') '4pt-B00', bmag, '-Exact-E.txt'
+            elseif (bmag.eq.11) then
+              write(twx,'(a)') '4pt-B0001-Exact-E.txt'
+            end if
+
+            open(11,file = twx)
+
+            do i=1, sites
+              titer(i+1) = en(i)
+            end do
+            write(11,tprint) titer
+
+          end if
 
           write(*,*) '*** end of loop ***'
           write(*,*)
 !        write(*,*)
         end do
 
-        close(201)
-!        close(200)
+        if (wxcflg.eq.1) then
+          close(301)
+          close(302)
+          close(303)
+        end if
+
+        if (wdflg.eq.1) then
+          close(31)
+          close(32)
+          close(33)
+        end if
+
+        if (wextflg.eq.1) then
+          close(401)
+          close(402)
+          close(403)
+        end if
+
+        if (weflg.eq.1) then
+          close(11)
+        end if
 
       end do
 
-      close(100)
-      close(101)
-      close(102)
-      close(103)
+      if (wmflg.eq.1) then
+        close(100)
+        close(101)
+        close(102)
+        close(103)
 
+        close(201)
+        close(202)
+        close(203)
+      endif
 
       end
