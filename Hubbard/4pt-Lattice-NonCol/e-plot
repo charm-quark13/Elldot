@@ -1,0 +1,33 @@
+set terminal pngcairo size 950,670 
+set ylabel 'Relative Difference'
+set xlabel 'U_0'
+
+do for [j=1:9] {
+
+  set title '4-Point Lattice Energy States Versus U0 for Symmetric B-Field with Magnitude = .'.j
+
+  set output '4pt-Exact-Energy-00'.j.'.png'
+
+  p '4pt-B00'.j.'-Exact-E.txt' u 1:2 w l title 'E_1' lc rgb 'dark-blue' lw 2, '' u 1:3 w l title 'E_2' lc rgb 'dark-green' lw 2, '' u 1:4 w l title 'E_3' lc rgb 'dark-red' lw 2, '' u 1:5 w l title 'E_4' lc rgb 'black' lw 2
+
+  set output
+
+} 
+
+  set title '4-Point Lattice Energy States Versus U0 for Symmetric B-Field with Magnitude = 1.0'
+
+  set output '4pt-Exact-Energy-0010.png'
+
+  p '4pt-B0010-Exact-E.txt' u 1:2 w l title 'E_1' lc rgb 'dark-blue' lw 2, '' u 1:3 w l title 'E_2' lc rgb 'dark-green' lw 2, '' u 1:4 w l title 'E_3' lc rgb 'dark-red' lw 2, '' u 1:5 w l title 'E_4' lc rgb 'black' lw 2
+
+  set output
+
+
+  set title '4-Point Lattice Energy States Versus U0 for Symmetric B-Field with Magnitude = .01'
+
+  set output '4pt-Exact-Energy-0001.png'
+
+  p '4pt-B0001-Exact-E.txt' u 1:2 w l title 'E_1' lc rgb 'dark-blue' lw 2, '' u 1:3 w l title 'E_2' lc rgb 'dark-green' lw 2, '' u 1:4 w l title 'E_3' lc rgb 'dark-red' lw 2, '' u 1:5 w l title 'E_4' lc rgb 'black' lw 2
+
+  set output
+

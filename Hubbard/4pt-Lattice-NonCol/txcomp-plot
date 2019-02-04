@@ -1,0 +1,24 @@
+set terminal pngcairo size 950,670 enhanced
+set ylabel '{/Symbol t}_x'
+set yrange [-.05:.05]
+set xlabel 'U_0'
+
+do for [j=1:10] {
+
+  set title '4-Point Lattice Torques in x-direction for B Magnitude = .'.j
+
+  set output '4pt-ExactComp-tx0'.j.'.png'
+
+  p '4pt-B0'.j.'-ExactExt-tx.txt' u 1:2 w l title '{/Symbol t}_{ext}(1)' lc rgb 'dark-blue' lw 2, '' u 1:3 w l title '{/Symbol t}_{ext}(2)' lc rgb 'dark-green' lw 2, '' u 1:4 w l title '{/Symbol t}_{ext}(3)' lc rgb 'dark-red' lw 2, '' u 1:5 w l title '{/Symbol t}_{ext}(4)' lc rgb 'black' lw 2, '4pt-B0'.j.'-ExactXC-tx.txt' u 1:2 w l title '{/Symbol t}_{XC}(1)' lc rgb 'light-blue' lw 2, '' u 1:3 w l title '{/Symbol t}_{XC}(2)' lc rgb 'light-green' lw 2, '' u 1:4 w l title '{/Symbol t}_{XC}(3)' lc rgb 'light-red' lw 2, '' u 1:5 w l title '{/Symbol t}_{XC}(4)' lc rgb 'gray' lw 2
+
+  set output
+
+}
+
+#  set title '4-Point Lattice Torques in x-direction for B Magnitude = .01'
+
+#  set output '4pt-ExactComp-tx01.png'
+
+#  p '4pt-B01-ExactExt-tx.txt' u 1:2 w l title '{/Symbol t}_{ext}(1)' lc rgb 'dark-blue' lw 2, '' u 1:3 w l title '{/Symbol t}_{ext}(2)' lc rgb 'dark-green' lw 2, '' u 1:4 w l title '{/Symbol t}_{ext}(3)' lc rgb 'dark-red' lw 2, '' u 1:5 w l title '{/Symbol t}_{ext}(4)' lc rgb 'black' lw 2, '4pt-B01-ExactXC-tx.txt' u 1:2 w l title '{/Symbol t}_{XC}(1)' lc rgb 'light-blue' lw 2, '' u 1:3 w l title '{/Symbol t}_{XC}(2)' lc rgb 'light-green' lw 2, '' u 1:4 w l title '{/Symbol t}_{XC}(3)' lc rgb 'light-red' lw 2, '' u 1:5 w l title '{/Symbol t}_{XC}(4)' lc rgb 'gray' lw 2
+
+ 
