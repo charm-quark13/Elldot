@@ -403,8 +403,8 @@ C**   do the xc torque correction
         end if
 
         do i = 1, 3
-          etmats(it,1,i) = u0
-          etmats(it,2,i) = etot
+          etmats(it+1,1,i) = u0
+          etmats(it+1,2,i) = etot
         end do
 
         do i=1, np
