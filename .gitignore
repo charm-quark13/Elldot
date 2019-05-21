@@ -1,5 +1,4 @@
-/Hubbard/a.out
-*.out
+**/*.out
 *.o
 fort.*
 *.png
@@ -14,6 +13,9 @@ fort.*
 *.png
 *.txt
 *.gif
-*.tar
+*.tar*
 *.zip
+*.fdb*
+*.fls
+*.gz
 /Hubbard/Carsten-Hub/*
