@@ -1,4 +1,4 @@
-      Module generalCG
+      Module coplanarCG
 
       IMPLICIT NONE
 
@@ -704,16 +704,6 @@ C  hopping constant between lattice sites.
         end do
       end do
 C  Eigenvalue solver for a complex, non-symmetric matrix.
-
-      open(300,file='hamiltonian')
-      write(300, matrix) dreal(transpose(mat))
-      write(300,*) '************************'
-      write(300, matrix) dimag(transpose(mat))
-      write(300,*) '************************'
-      write(300,*) 'V'
-      write(300,vector) V
-
-      call exit(-1)
 
       call ZHEEV('v','l', dim, mat, dim, en, work, lwork, rwork, info)
 

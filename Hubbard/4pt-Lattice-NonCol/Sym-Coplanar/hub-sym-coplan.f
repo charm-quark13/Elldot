@@ -1,13 +1,13 @@
       Program Inversion
 C  Here I use a module to allow for the passing of global variables as well
 C  as portability of the code to future programs.
-      USE generalCG
+      USE coplanarCG
 !      USE interactingHD
 
       Implicit none
 
       integer :: i,j,k,iter,it,steps,bmag,
-     &           wxcflg, wdflg, wmflg, weflg, wextflg
+     &           wxcflg, wdflg, wmflg, weflg, wextflg, txcflg
 
       real(8) :: ftol,fret,fretlo,x
       real(8) :: Bx(sites), By(sites), Bz(sites),mags(sites+1)
@@ -37,7 +37,8 @@ C  as portability of the code to future programs.
       dx = 1d-5
       steps = 5
 
-      wextflg = 1
+      txcflg = 1
+      wextflg = 0
       weflg = 0
       wxcflg = 0
       wdflg = 0
@@ -45,14 +46,14 @@ C  as portability of the code to future programs.
 
       if (wmflg.eq.1) then
 
-        write(mwn,'(a)') '4pt-NCUnsym-Map-n.txt'
-        write(mwx,'(a)') '4pt-NCUnsym-Map-x.txt'
-        write(mwy,'(a)') '4pt-NCUnsym-Map-y.txt'
-        write(mwz,'(a)') '4pt-NCUnsym-Map-z.txt'
+        write(mwn,'(a)') '4pt-SymCP-U20-Map-n.txt'
+        write(mwx,'(a)') '4pt-SymCP-U20-Map-x.txt'
+        write(mwy,'(a)') '4pt-SymCP-U20-Map-y.txt'
+        write(mwz,'(a)') '4pt-SymCP-U20-Map-z.txt'
 
-        write(ttotwx,'(a)') '4pt-NCUnsym-TorqT-x.txt'
-        write(ttotwy,'(a)') '4pt-NCUnsym-TorqT-y.txt'
-        write(ttotwz,'(a)') '4pt-NCUnsym-TorqT-z.txt'
+        write(ttotwx,'(a)') '4pt-SymCP-U20-TorqT-x.txt'
+        write(ttotwy,'(a)') '4pt-SymCP-U20-TorqT-y.txt'
+        write(ttotwz,'(a)') '4pt-SymCP-U20-TorqT-z.txt'
 
         open(100,file = mwn)
         open(101,file = mwx)
@@ -65,7 +66,7 @@ C  as portability of the code to future programs.
 
       end if
 
-      do bmag = 1, 11
+      do bmag = 1, 1
 !      do bmag = 2, 10
 
         v = 0.d0
@@ -74,19 +75,19 @@ C  as portability of the code to future programs.
         bz = 0.d0
 
         v(1) = 1.d0
-        do i = 2, 3
+        do i = 2, sites-1
           v(i) = -1.d0
         end do
-        v(4) = 2.5d0
+        v(sites) = 1.d0
 
         Bx(1) = dble(bmag/10.d0)
         Bx(2) = dble(bmag/10.d0)
-        Bx(4) = -dble(bmag/5.d0)
+!        Bx(4) = -dble(bmag/5.d0)
 !        Bx(1) = dble(bmag/10.d1)
 !        Bx(2) = dble(bmag/10.d1)
 
-        By(1) = dble(bmag/10.d0)
-        By(3) = -dble(bmag/10.d0)
+!        By(1) = dble(bmag/10.d0)
+!        By(3) = -dble(bmag/10.d0)
 !        By(2) = -dble(bmag/10.d1)
 !        By(3) = -dble(bmag/10.d1)
 
@@ -136,7 +137,7 @@ C  as portability of the code to future programs.
 ***************************************************************************
 ***   Solving the initial Schrodinger equation for our system via hbuild.
 ***************************************************************************
-        do it=1,100
+        do it=0, 200
 
           fretlo = 1.d0
           vlo = 0.d0
@@ -161,8 +162,8 @@ C  as portability of the code to future programs.
 ***   subroutine.
 ***************************************************************************
 !        number = 0
-          if (it.gt.1) v=vprev
-          write(*,vector) vprev
+!          if (it.gt.1) v=vprev
+!          write(*,vector) vprev
 
           call frprmn(v,dim*2,ftol,iter,fret)
 
@@ -234,18 +235,19 @@ C  as portability of the code to future programs.
 !          call btrans(dens,vlo,vstart,bt,btx,bty,btz)
 
 !          call metric(bmet,btx,bty,btz,v,vstart)
-          call metric(bmet,btx,bty,btz,vlo,vstart)
+!          call metric(bmet,btx,bty,btz,vlo,vstart)
 
 !          call blong(dens,v,vstart,bl,blx,bly,blz)
           call blong(dens,vlo,vstart,bl,blx,bly,blz)
 
 !          call bpar(dens,vlo,vstart,bl,blx,bly,blz)
 
-          vtest = vlo
+          vtest = 0.d0
           do i=1,sites
-            vtest(sites + i) = vtest(sites + i) + blx(i)
-            vtest(sites*2 + i) = vtest(sites*2 + i) + bly(i)
-            vtest(sites*3 + i) = vtest(sites*3 + i) + blz(i)
+            vtest(i) = vstart(i) + vhxc(i)
+            vtest(sites + i) = vstart(sites + i) + blx(i)
+            vtest(sites*2 + i) = vstart(sites*2 + i) + bly(i)
+            vtest(sites*3 + i) = vstart(sites*3 + i) + blz(i)
           end do
 
           call hbuild(vtest,hlong)
@@ -258,20 +260,20 @@ C  as portability of the code to future programs.
           if (wdflg.eq.1) then
 
             if (bmag.lt.10) then
-              write(mwn,'(a,i1,a)') '4pt-B', bmag, '-XC-NCUnsym-n.txt'
-              write(mwx,'(a,i1,a)') '4pt-B', bmag, '-XC-NCUnsym-mx.txt'
-              write(mwy,'(a,i1,a)') '4pt-B', bmag, '-XC-NCUnsym-my.txt'
-              write(mwz,'(a,i1,a)') '4pt-B', bmag, '-XC-NCUnsym-mz.txt'
+              write(mwn,'(a,i1,a)') '4pt-B', bmag, '-SymCP-U20-n.txt'
+              write(mwx,'(a,i1,a)') '4pt-B', bmag, '-SymCP-U20-mx.txt'
+              write(mwy,'(a,i1,a)') '4pt-B', bmag, '-SymCP-U20-my.txt'
+              write(mwz,'(a,i1,a)') '4pt-B', bmag, '-SymCP-U20-mz.txt'
             elseif (bmag.eq.10) then
-              write(mwn,'(a,i2,a)') '4pt-B', bmag, '-XC-NCUnsym-n.txt'
-              write(mwx,'(a,i2,a)') '4pt-B', bmag, '-XC-NCUnsym-mx.txt'
-              write(mwy,'(a,i2,a)') '4pt-B', bmag, '-XC-NCUnsym-my.txt'
-              write(mwz,'(a,i2,a)') '4pt-B', bmag, '-XC-NCUnsym-mz.txt'
+              write(mwn,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-n.txt'
+              write(mwx,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-mx.txt'
+              write(mwy,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-my.txt'
+              write(mwz,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-mz.txt'
             elseif (bmag.eq.11) then
-              write(mwn,'(a)') '4pt-B01-XC-NCUnsym-n.txt'
-              write(mwx,'(a)') '4pt-B01-XC-NCUnsym-mx.txt'
-              write(mwy,'(a)') '4pt-B01-XC-NCUnsym-my.txt'
-              write(mwz,'(a)') '4pt-B01-XC-NCUnsym-mz.txt'
+              write(mwn,'(a)') '4pt-B01-SymCP-U20-n.txt'
+              write(mwx,'(a)') '4pt-B01-SymCP-U20-mx.txt'
+              write(mwy,'(a)') '4pt-B01-SymCP-U20-my.txt'
+              write(mwz,'(a)') '4pt-B01-SymCP-U20-mz.txt'
             end if
 
             open(30,file = mwn)
@@ -284,17 +286,17 @@ C  as portability of the code to future programs.
           if (wxcflg.eq.1) then
 
             if (bmag.lt.10) then
-              write(twx,'(a,i1,a)') '4pt-B', bmag, '-XC-NCUnsym-tx.txt'
-              write(twy,'(a,i1,a)') '4pt-B', bmag, '-XC-NCUnsym-ty.txt'
-              write(twz,'(a,i1,a)') '4pt-B', bmag, '-XC-NCUnsym-tz.txt'
+              write(twx,'(a,i1,a)') '4pt-B', bmag,'-XC-SymCP-U20-tx.txt'
+              write(twy,'(a,i1,a)') '4pt-B', bmag,'-XC-SymCP-U20-ty.txt'
+              write(twz,'(a,i1,a)') '4pt-B', bmag,'-XC-SymCP-U20-tz.txt'
             elseif (bmag.eq.10) then
-              write(twx,'(a,i2,a)') '4pt-B', bmag, '-XC-NCUnsym-tx.txt'
-              write(twy,'(a,i2,a)') '4pt-B', bmag, '-XC-NCUnsym-ty.txt'
-              write(twz,'(a,i2,a)') '4pt-B', bmag, '-XC-NCUnsym-tz.txt'
+              write(twx,'(a,i2,a)') '4pt-B', bmag,'-XC-SymCP-U20-tx.txt'
+              write(twy,'(a,i2,a)') '4pt-B', bmag,'-XC-SymCP-U20-ty.txt'
+              write(twz,'(a,i2,a)') '4pt-B', bmag,'-XC-SymCP-U20-tz.txt'
             else
-              write(twx,'(a)') '4pt-B01-XC-NCUnsym-tx.txt'
-              write(twy,'(a)') '4pt-B01-XC-NCUnsym-ty.txt'
-              write(twz,'(a)') '4pt-B01-XC-NCUnsym-tz.txt'
+              write(twx,'(a)') '4pt-B01-XC-SymCP-U20-tx.txt'
+              write(twy,'(a)') '4pt-B01-XC-SymCP-U20-ty.txt'
+              write(twz,'(a)') '4pt-B01-XC-SymCP-U20-tz.txt'
             end if
 
             open(301,file = twx)
@@ -309,14 +311,14 @@ C  as portability of the code to future programs.
 
           if (wdflg.eq.1) then
             do i=1, sites
-              titer(i+1) = longd(i)
+              titer(i+1) = dens(i)
             end do
             write(30,tprint) titer
           end if
 
           if (wmflg.eq.1) then
             do i=1, sites
-              tplot(i+2) = dens(i) - longd(i)
+              tplot(i+2) = dens(i)
 !              tplot(i+1) = longd(i)
             end do
 
@@ -326,7 +328,7 @@ C  as portability of the code to future programs.
 
           if (wmflg.eq.1) then
             do i=1, sites
-              tplot(i+2) = dens(sites + i) - longd(sites + i)
+              tplot(i+2) = dens(sites + i)
 !              tplot(i+1) = longd(sites + i)
             end do
 
@@ -340,7 +342,7 @@ C  as portability of the code to future programs.
 
           if (wdflg.eq.1) then
             do i=1, sites
-              titer(i+1) = longd(sites + i)
+              titer(i+1) = dens(sites + i)
             end do
             write(31,tprint) titer
           end if
@@ -360,7 +362,7 @@ C  as portability of the code to future programs.
 
           if (wmflg.eq.1) then
             do i=1, sites
-              tplot(i+2) = dens(sites*2 + i) - longd(sites*2 + i)
+              tplot(i+2) = dens(sites*2 + i)
 !              tplot(i+1) = longd(sites*2 + i)
             end do
 
@@ -375,7 +377,7 @@ C  as portability of the code to future programs.
 
           if (wdflg.eq.1) then
             do i=1, sites
-              titer(i+1) = longd(sites*2 + i)
+              titer(i+1) = dens(sites*2 + i)
             end do
             write(32,tprint) titer
           end if
@@ -389,7 +391,7 @@ C  as portability of the code to future programs.
 
           if (wmflg.eq.1) then
             do i=1, sites
-              tplot(i+2) = dens(sites*3 + i) - longd(sites*3 + i)
+              tplot(i+2) = dens(sites*3 + i)
 !              tplot(i+1) = longd(sites*3 + i)
             end do
 
@@ -403,7 +405,7 @@ C  as portability of the code to future programs.
 
           if (wdflg.eq.1) then
             do i=1, sites
-              titer(i+1) = longd(sites*3 + i)
+              titer(i+1) = dens(sites*3 + i)
             end do
             write(33,tprint) titer
           end if
@@ -418,17 +420,23 @@ C  as portability of the code to future programs.
           if (wextflg.eq.1) then
 
             if (bmag.lt.10) then
-              write(twx,'(a,i1,a)') '4pt-B', bmag, '-Ext-Unsym-tx.txt'
-              write(twy,'(a,i1,a)') '4pt-B', bmag, '-Ext-Unsym-ty.txt'
-              write(twz,'(a,i1,a)') '4pt-B', bmag, '-Ext-Unsym-tz.txt'
+              write(twx,'(a,i1,a)') '4pt-B', bmag,
+     &                                      '-Ext-SymCP-U20-tx.txt'
+              write(twy,'(a,i1,a)') '4pt-B', bmag,
+     &                                      '-Ext-SymCP-U20-ty.txt'
+              write(twz,'(a,i1,a)') '4pt-B', bmag,
+     &                                      '-Ext-SymCP-U20-tz.txt'
             elseif (bmag.eq.10) then
-              write(twx,'(a,i2,a)') '4pt-B', bmag, '-Ext-Unsym-tx.txt'
-              write(twy,'(a,i2,a)') '4pt-B', bmag, '-Ext-Unsym-ty.txt'
-              write(twz,'(a,i2,a)') '4pt-B', bmag, '-Ext-Unsym-tz.txt'
+              write(twx,'(a,i2,a)') '4pt-B', bmag,
+     &                                      '-Ext-SymCP-U20-tx.txt'
+              write(twy,'(a,i2,a)') '4pt-B', bmag,
+     &                                      '-Ext-SymCP-U20-ty.txt'
+              write(twz,'(a,i2,a)') '4pt-B', bmag,
+     &                                      '-Ext-SymCP-U20-tz.txt'
             elseif (bmag.eq.11) then
-              write(twx,'(a)') '4pt-B01-Ext-Unsym-tx.txt'
-              write(twy,'(a)') '4pt-B01-Ext-Unsym-ty.txt'
-              write(twz,'(a)') '4pt-B01-Ext-Unsym-tz.txt'
+              write(twx,'(a)') '4pt-B01-Ext-SymCP-U20-tx.txt'
+              write(twy,'(a)') '4pt-B01-Ext-SymCP-U20-ty.txt'
+              write(twz,'(a)') '4pt-B01-Ext-SymCP-U20-tz.txt'
             end if
 
             open(401,file = twx)
@@ -452,14 +460,56 @@ C  as portability of the code to future programs.
 
           end if
 
+          if (txcflg.eq.1) then
+
+            if (bmag.lt.10) then
+              write(mwn,'(a,i1,a)') '4pt-B', bmag, '-SymCP-0txc-n.txt'
+              write(mwx,'(a,i1,a)') '4pt-B', bmag, '-SymCP-0txc-mx.txt'
+              write(mwy,'(a,i1,a)') '4pt-B', bmag, '-SymCP-0txc-my.txt'
+              write(mwz,'(a,i1,a)') '4pt-B', bmag, '-SymCP-0txc-mz.txt'
+
+              open(30,file = mwn)
+              open(31,file = mwx)
+              open(32,file = mwy)
+              open(33,file = mwz)
+
+            end if
+
+            titer(1) = u0
+
+            do i=1, sites
+              titer(i+1) = longd(i)
+            end do
+            write(30,tprint) titer
+
+            do i=1, sites
+              titer(i+1) = longd(i)
+            end do
+            write(30,tprint) titer
+
+            do i=1, sites
+              titer(i+1) = longd(i)
+            end do
+            write(30,tprint) titer
+
+            do i=1, sites
+              titer(i+1) = longd(i)
+            end do
+            write(30,tprint) titer
+
+          end if
+
+
           if (weflg.eq.1) then
 
             if (bmag.lt.10) then
-              write(twx,'(a,i1,a)') '4pt-B', bmag, '-Exact-Unsym-E.txt'
+              write(twx,'(a,i1,a)') '4pt-B', bmag,
+     &                                      '-Exact-SymCP-U20-E.txt'
             elseif (bmag.eq.10) then
-              write(twx,'(a,i2,a)') '4pt-B', bmag, '-Exact-Unsym-E.txt'
+              write(twx,'(a,i2,a)') '4pt-B', bmag,
+     &                                      '-Exact-SymCP-U20-E.txt'
             elseif (bmag.eq.11) then
-              write(twx,'(a)') '4pt-B01-Exact-Unsym-E.txt'
+              write(twx,'(a)') '4pt-B01-Exact-SymCP-U20-E.txt'
             end if
 
             open(11,file = twx)
