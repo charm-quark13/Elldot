@@ -1,5 +1,6 @@
 /Hubbard/a.out
-a.out
+*.out
+*.o
 fort.*
 *.png
 *.cube
