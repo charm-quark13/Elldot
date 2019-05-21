@@ -1,0 +1,38 @@
+set terminal pngcairo size 1000,650 enhanced
+set xlabel 'U_0'
+
+set title 'E_{Total} for 4-Point Lattice (Slater Potential)'
+
+set ylabel 'E_{Total}'
+
+set output '4pt-EComp-Slater.png'
+
+p 'AsymCP-Exact-E.txt' u 1:2 w l lc rgb 'red' lw 3, '4pt-B1-Slat-Asym-mx.txt' u 1:2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Asym-mx.txt' u 1:2 w l lc rgb 'cyan' lw 2
+
+set output
+
+set title 'E_{Total} for 4-Point Lattice (STLS Procedure)'
+
+set output '4pt-EComp-STLS.png'
+
+ p 'AsymCP-Exact-E.txt' u 1:2 w l lc rgb 'red' lw 3, '4pt-B1-STLS-Asym-mx.txt' u 1:2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Asym-mx.txt' u 1:2 w l lc rgb 'magenta' lw 2
+
+set output
+
+set title 'E_{Total} for 4-Point Lattice (OEP Procedure)'
+
+set output '4pt-EComp-OEP.png'
+
+p 'AsymCP-Exact-E.txt' u 1:2 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Asym-mx.txt' u 1:2 w l lc rgb 'green' lw 2
+
+set output
+
+set title 'E_{Total} for 4-Point Lattice'
+
+set output '4pt-EComp-All.png'
+
+set key off
+
+p 'AsymCP-Exact-E.txt' u 1:2 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Asym-mx.txt' u 1:2 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Asym-mx.txt' u 1:2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Asym-mx.txt' u 1:2 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Asym-mx.txt' u 1:2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Asym-mx.txt' u 1:2 w l lc rgb 'magenta' lw 2
+
+set output
