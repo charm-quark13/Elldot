@@ -410,40 +410,37 @@ C  as portability of the code to future programs.
 
           if (txcflg.eq.1) then
 
-            if (bmag.lt.10) then
-              write(mwn,'(a,i1,a)') '4pt-B', bmag, '-Asym-0txc-n.txt'
-              write(mwx,'(a,i1,a)') '4pt-B', bmag, '-Asym-0txc-mx.txt'
-              write(mwy,'(a,i1,a)') '4pt-B', bmag, '-Asym-0txc-my.txt'
-              write(mwz,'(a,i1,a)') '4pt-B', bmag, '-Asym-0txc-mz.txt'
+            write(mwn,'(a,i1,a)') '4pt-B1-Asym-0txc-n.txt'
+            write(mwx,'(a,i1,a)') '4pt-B1-Asym-0txc-mx.txt'
+            write(mwy,'(a,i1,a)') '4pt-B1-Asym-0txc-my.txt'
+            write(mwz,'(a,i1,a)') '4pt-B1-Asym-0txc-mz.txt'
 
-              open(30,file = mwn)
-              open(31,file = mwx)
-              open(32,file = mwy)
-              open(33,file = mwz)
-
-            end if
+            open(900, file=mwn)
+            open(901, file=mwx)
+            open(902, file=mwy)
+            open(903, file=mwz)
 
             titer(1) = u0
 
             do i=1, sites
               titer(i+1) = longd(i)
             end do
-            write(30,tprint) titer
+            write(900,tprint) titer
 
             do i=1, sites
               titer(i+1) = longd(i)
             end do
-            write(30,tprint) titer
+            write(901,tprint) titer
 
             do i=1, sites
               titer(i+1) = longd(i)
             end do
-            write(30,tprint) titer
+            write(902,tprint) titer
 
             do i=1, sites
               titer(i+1) = longd(i)
             end do
-            write(30,tprint) titer
+            write(903,tprint) titer
 
           end if
 
@@ -537,6 +534,13 @@ C  as portability of the code to future programs.
 
         if (weflg.eq.1) then
           close(11)
+        end if
+
+        if (txcflg.eq.1) then
+          close(900)
+          close(901)
+          close(902)
+          close(903)
         end if
 
       end do
