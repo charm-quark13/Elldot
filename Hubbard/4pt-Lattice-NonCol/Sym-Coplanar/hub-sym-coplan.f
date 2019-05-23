@@ -7,7 +7,7 @@ C  as portability of the code to future programs.
       Implicit none
 
       integer :: i,j,k,iter,it,steps,bmag,
-     &           wxcflg, wdflg, wmflg, weflg, wextflg, txcflg
+     &           wxcflg, wdflg, wmflg, weflg, wextflg, txcflg, wbflg
 
       real(8) :: ftol,fret,fretlo,x
       real(8) :: Bx(sites), By(sites), Bz(sites),mags(sites+1)
@@ -37,12 +37,13 @@ C  as portability of the code to future programs.
       dx = 1d-5
       steps = 5
 
-      txcflg = 1
+      txcflg = 0
       wextflg = 0
       weflg = 0
       wxcflg = 0
       wdflg = 0
       wmflg = 0
+      wbflg = 1
 
       if (wmflg.eq.1) then
 
@@ -212,6 +213,44 @@ C  as portability of the code to future programs.
           do i=1,sites
             vhxc(i) = vlo(i) - vstart(i)
           end do
+
+          if (wbflg.eq.1) then
+            if (bmag.lt.10) then
+              write(mwx,'(a,i1,a)') '4pt-B', bmag, '-SymCP-bxcx.txt'
+              write(mwy,'(a,i1,a)') '4pt-B', bmag, '-SymCP-bxcy.txt'
+              write(mwz,'(a,i1,a)') '4pt-B', bmag, '-SymCP-bxcz.txt'
+            elseif (bmag.eq.10) then
+              write(mwx,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-bxcx.txt'
+              write(mwy,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-bxcy.txt'
+              write(mwz,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-bxcz.txt'
+            elseif (bmag.eq.11) then
+              write(mwx,'(a)') '4pt-B01-SymCP-U20-bxcx.txt'
+              write(mwy,'(a)') '4pt-B01-SymCP-U20-bxcy.txt'
+              write(mwz,'(a)') '4pt-B01-SymCP-U20-bxcz.txt'
+            end if
+
+            open(111,file = mwx)
+            open(112,file = mwy)
+            open(113,file = mwz)
+
+            titer(1) = U0
+            do i = 1, sites
+              titer(i+1) = vhxc(sites + i)
+            end do
+            write(111,tprint) titer
+
+            do i = 1, sites
+              titer(i+1) = vhxc(sites*2 + i)
+            end do
+            write(112,tprint) titer
+
+            do i = 1, sites
+              titer(i+1) = vhxc(sites*3 + i)
+            end do
+            write(113,tprint) titer
+
+          end if
+
 
 !          call tcalc(dens,v,vstart,tau,tx,ty,tz)
           call tcalc(dens,vlo,vstart,tau,tx,ty,tz)
@@ -556,6 +595,12 @@ C  as portability of the code to future programs.
 
         if (weflg.eq.1) then
           close(11)
+        end if
+
+        if (wbflg.eq.1) then
+          close(111)
+          close(112)
+          close(113)
         end if
 
       end do
