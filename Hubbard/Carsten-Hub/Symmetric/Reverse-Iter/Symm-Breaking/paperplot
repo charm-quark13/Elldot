@@ -1,0 +1,176 @@
+set terminal pngcairo size 600,400 enhanced
+set xlabel 'U_0'
+
+set key noautotitle
+
+set xrange[0:10]
+
+set ylabel '{/Symbol t}_x'
+set yrange [-.025:.025]
+
+set output '4pt-Comp-tx-paperfig.png'
+
+p '4pt-B1-XC-SymCP-U20-tx.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-tx.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-tx.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-tx.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-tx.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-tx.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+set ylabel '{/Symbol t}_y'
+set yrange [-.025:.025]
+
+set output '4pt-Comp-ty-paperfig.png'
+
+p '4pt-B1-XC-SymCP-U20-ty.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-ty.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-ty.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-ty.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-ty.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-ty.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+set output '4pt-Comp-tz-paperfig.png'
+
+set ylabel '{/Symbol t}_z'
+set yrange [-.025:.025]
+
+p '4pt-B1-XC-SymCP-U20-tz.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-tz.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-tz.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-tz.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-tz.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-tz.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+set ylabel 'm_x'
+set yrange [-1.:1.]
+
+set output '4pt-Comp-mx-paperfig.png'
+
+p '4pt-B1-SymCP-U20-mx.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-mx.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-mx.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-mx.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-mx.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-mx.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+set ylabel 'm_y'
+set yrange [-1.:1.]
+
+set output '4pt-Comp-my-paperfig.png'
+
+p '4pt-B1-SymCP-U20-my.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-my.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-my.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-my.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-my.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-my.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+set output '4pt-Comp-mz-paperfig.png'
+
+set ylabel 'm_z'
+set yrange [-1.:1.]
+
+p '4pt-B1-SymCP-U20-mz.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-mz.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-mz.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-mz.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-mz.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-mz.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+set output '4pt-Comp-n-paperfig.png'
+
+set ylabel 'n'
+set yrange [0.:1.]
+
+p '4pt-B1-SymCP-U20-n.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-n.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-n.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-n.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-n.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-n.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+set output '4pt-tmag-sfree.png'
+
+set ylabel '|{/Symbol t}|'
+set yrange [0:.1]
+
+p 'SymCP-XC-TMag.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, 'SymCP-Ext-TMag.txt' u 1:2 w l lc rgb 'red' lw 3 dt '-', '' u 1:3 w l lc rgb 'red' lw 3 dt '-', '' u 1:4 w l lc rgb 'red' lw 3 dt '-', '' u 1:5 w l lc rgb 'red' lw 3 dt '-', 'SymCP-Slatu-TMag.txt' u 1:2 w l lc rgb 'blue' lw 2, '' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, 'SymCP-STCu-TMag.txt' u 1:2 w l lc rgb 'cyan' lw 2, '' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, 'SymCP-STLSu-TMag.txt' u 1:2 w l lc rgb 'orange' lw 2, '' u 1:3 w l lc rgb 'orange' lw 2 , '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2, 'SymCP-STLScu-TMag.txt' u 1:2 w l lc rgb 'magenta' lw 2, '' u 1:3 w l lc rgb 'magenta' lw 2 , '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2, 'SymCP-OEPu-TMag.txt' u 1:2 w l lc rgb 'green' lw 2, '' u 1:3 w l lc rgb 'green' lw 2 , '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2
+
+set output
+
+set output '4pt-Comp-bxcx-paperfig.png'
+
+set ylabel 'B_{xc}'
+set yrange [-4.:4.]
+
+p '4pt-B1-SymCP-bxcx.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3
+
+set output
+
+set ylabel 'B_{xc}'
+set yrange [-1.:1.]
+
+set output '4pt-Comp-bxcy-paperfig.png'
+
+p '4pt-B1-SymCP-bxcy.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-my.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-my.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-my.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-my.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-my.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+set output '4pt-Comp-bxcz-paperfig.png'
+
+set ylabel 'B_{xc}'
+set yrange [-1.:1.]
+
+p '4pt-B1-SymCP-bxcz.txt' u 1:2 w l lc rgb 'red' lw 3, '' u 1:3 w l lc rgb 'red' lw 3 , '' u 1:4 w l lc rgb 'red' lw 3 , '' u 1:5 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-mz.txt' u 1:3 w l lc rgb 'green' lw 2, '' u 1:4 w l lc rgb 'green' lw 2 , '' u 1:5 w l lc rgb 'green' lw 2 , '' u 1:6 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-mz.txt' u 1:3 w l lc rgb 'blue' lw 2, '' u 1:4 w l lc rgb 'blue' lw 2, '' u 1:5 w l lc rgb 'blue' lw 2, '' u 1:6 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-mz.txt' u 1:3 w l lc rgb 'cyan' lw 2, '' u 1:4 w l lc rgb 'cyan' lw 2, '' u 1:5 w l lc rgb 'cyan' lw 2, '' u 1:6 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-mz.txt' u 1:3 w l lc rgb 'orange' lw 2, '' u 1:4 w l lc rgb 'orange' lw 2 , '' u 1:5 w l lc rgb 'orange' lw 2 , '' u 1:6 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-mz.txt' u 1:3 w l lc rgb 'magenta' lw 2, '' u 1:4 w l lc rgb 'magenta' lw 2 , '' u 1:5 w l lc rgb 'magenta' lw 2 , '' u 1:6 w l lc rgb 'magenta' lw 2
+
+set output
+
+
+#######################################################################
+
+do for [j=1:4] {
+
+  set ylabel '{/Symbol t}_x'
+  set yrange [-.025:.025]
+
+  set output '4pt-tx-site'.j.'-paperfig.png'
+
+  p '4pt-B1-XC-SymCP-U20-tx.txt' u 1:j+1 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-tx.txt' u 1:j+2 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-tx.txt' u 1:j+2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-tx.txt' u 1:j+2 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-tx.txt' u 1:j+2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-tx.txt' u 1:j+2 w l lc rgb 'magenta' lw 2
+
+  set output
+
+  set ylabel '{/Symbol t}_y'
+  set yrange [-.1:.1]
+
+  set output '4pt-ty-site'.j.'-paperfig.png'
+
+  p '4pt-B1-XC-SymCP-U20-ty.txt' u 1:j+1 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-ty.txt' u 1:j+2 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-ty.txt' u 1:j+2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-ty.txt' u 1:j+2 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-ty.txt' u 1:j+2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-ty.txt' u 1:j+2 w l lc rgb 'magenta' lw 2
+
+  set output
+
+  set output '4pt-tz-site'.j.'-paperfig.png'
+
+  set ylabel '{/Symbol t}_z'
+  set yrange [-.025:.025]
+
+  p '4pt-B1-XC-SymCP-U20-tz.txt' u 1:j+1 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-tz.txt' u 1:j+2 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-tz.txt' u 1:j+2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-tz.txt' u 1:j+2 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-tz.txt' u 1:j+2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-tz.txt' u 1:j+2 w l lc rgb 'magenta' lw 2
+
+  set output
+
+  set ylabel 'm_x'
+  set yrange [-1.:1.]
+
+  set output '4pt-mx-site'.j.'-paperfig.png'
+
+  p '4pt-B1-SymCP-U20-mx.txt' u 1:j+1 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-mx.txt' u 1:j+2 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-mx.txt' u 1:j+2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-mx.txt' u 1:j+2 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-mx.txt' u 1:j+2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-mx.txt' u 1:j+2 w l lc rgb 'magenta' lw 2
+
+  set output
+
+  set ylabel 'm_y'
+  set yrange [-1.:1.]
+
+  set output '4pt-my-site'.j.'-paperfig.png'
+
+  p '4pt-B1-SymCP-U20-my.txt' u 1:j+1 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-my.txt' u 1:j+2 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-my.txt' u 1:j+2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-my.txt' u 1:j+2 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-my.txt' u 1:j+2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-my.txt' u 1:j+2 w l lc rgb 'magenta' lw 2
+
+  set output
+
+  set output '4pt-mz-site'.j.'-paperfig.png'
+
+  set ylabel 'm_z'
+  set yrange [-1.:1.]
+
+  p '4pt-B1-SymCP-U20-mz.txt' u 1:j+1 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-mz.txt' u 1:j+2 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-mz.txt' u 1:j+2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-mz.txt' u 1:j+2 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-mz.txt' u 1:j+2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-mz.txt' u 1:j+2 w l lc rgb 'magenta' lw 2
+
+  set output
+
+  set output '4pt-n-site'.j.'-paperfig.png'
+
+  set ylabel 'n'
+  set yrange [0.:1.]
+
+  p '4pt-B1-SymCP-U20-n.txt' u 1:j+1 w l lc rgb 'red' lw 3, '4pt-B1-OEP-Unenforced-n.txt' u 1:j+2 w l lc rgb 'green' lw 2, '4pt-B1-Slat-Unenforced-n.txt' u 1:j+2 w l lc rgb 'blue' lw 2, '4pt-B1-STC-Unenforced-n.txt' u 1:j+2 w l lc rgb 'cyan' lw 2, '4pt-B1-STLS-Unenforced-n.txt' u 1:j+2 w l lc rgb 'orange' lw 2, '4pt-B1-STLSc-Unenforced-n.txt' u 1:j+2 w l lc rgb 'magenta' lw 2
+
+  set output
+
+
+}
