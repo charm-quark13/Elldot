@@ -1,7 +1,7 @@
       PROGRAM TWOSPIN
       IMPLICIT NONE
 
-      INTEGER I,J,k,LWORK,INFO,MODE,ITER, vec, krev
+      INTEGER I,J,k,LWORK,INFO,MODE,ITER, vec, krev, xc_guess, xc_slater
       PARAMETER (LWORK = 100)
 
       DOUBLE PRECISION C,CP,T,TP,V(3),BX(3),BY(3),BZ(3),
@@ -12,7 +12,7 @@
      &                 mmat(500, 6, 3), mback(500, 6, 3)
       DOUBLE PRECISION U0,MIX,TOL,EOLD,CRIT,EH,ETOT,EVXC,EXC,EX,EC
 
-      character(30) :: vec_files(3)
+      character(100) :: vec_files(3)
 
       DOUBLE COMPLEX M(6,6),WORK(LWORK),GAMMA(2,2,3,3),PHI(6,6)
       COMMON /EVALS/ E,PHI,GAMMA
@@ -33,8 +33,6 @@
 !         STOP
 !      ENDIF
 
-
-
       ! do i = 1, 3
       !   v(i) = 0.d0
       !   bx(i) = 0.d0
@@ -44,17 +42,50 @@
 
       mode = 2
 
+      xc_guess = 1
+      xc_slater = 0
+
       do vec = 1, 3
-        write(vec_files(vec), '(a,i1,a)') 'Site', vec,
-     &                                    '-KSRev-smallz.txt'
+        write(vec_files(vec), '(a,i1,a)')
+     &              'Site', vec, '-KSRev-smallz-Slater.txt'
+C     &              'Site', vec, '-KSRev-0field-Slater.txt'
+C     &              'Site', vec, '-KSRev-planar-Slater.txt'
+
+        if (xc_guess.eq.1) then
+          write(vec_files(vec), '(a,i1,a)')
+C     &              'Site', vec, '-KSRev-smallz-noGuess.txt'
+C     &              'Site', vec, '-KSRev-0field-noGuess.txt'
+     &              'Site', vec, '-KSRev-planar-noGuess.txt'
+        end if
+
         open(1000+vec, file=vec_files(vec))
 
-        write(vec_files(vec), '(a,i1,a)') 'Site', vec,
-     &                                    '-KSForward-smallz.txt'
+        write(vec_files(vec), '(a,i1,a)')
+     &              'Site', vec ,'-KSForward-smallz-Slater.txt'
+C     &              'Site', vec,'-KSForward-0field-Slater.txt'
+C     &              'Site', vec ,'-KSForward-planar-Slater.txt'
+
+        if (xc_guess.eq.1) then
+          write(vec_files(vec), '(a,i1,a)')
+C     &              'Site', vec ,'-KSForward-smallz-noGuess.txt'
+C     &              'Site', vec,'-KSForward-0field-noGuess.txt'
+     &               'Site', vec ,'-KSForward-planar-noGuess.txt'
+        end if
+
         open(2000+vec, file=vec_files(vec))
 
-        write(vec_files(vec), '(a,i1,a)') 'Site', vec,
-     &                                    '-KSBackward-smallz.txt'
+        write(vec_files(vec), '(a,i1,a)')
+     &            'Site', vec,'-KSBackward-smallz-Slater.txt'
+C     &            'Site', vec,'-KSBackward-0field-Slater.txt'
+C     &            'Site', vec,'-KSBackward-planar-Slater.txt'
+
+        if (xc_guess.eq.1) then
+          write(vec_files(vec), '(a,i1,a)')
+C     &            'Site', vec,'-KSBackward-smallz-noGuess.txt'
+C     &            'Site', vec,'-KSBackward-0field-noGuess.txt'
+     &            'Site', vec,'-KSBackward-planar-noGuess.txt'
+        end if
+
         open(3000+vec, file=vec_files(vec))
 
       end do
@@ -62,9 +93,21 @@
       MIX = 0.1D0
       TOL = 1.D-8
 
-      ! open(1, file='planar_field.txt')
-      ! open(1, file='0field.txt')
-      open(1, file='smallz_field.txt')
+!      open(111, file='smallz_E-Slater.txt')
+!      open(111, file='0field_E-Slater.txt')
+!      open(111, file='planar_E-Slater.txt')
+
+      if (xc_guess.eq.1) then
+C        open(111, file='smallz_E-noGuess.txt')
+C        open(111, file='0field_E-noGuess.txt')
+        open(111, file='planar_E-noGuess.txt')
+      end if
+
+C      open(1, file='smallz_field.txt')
+C      open(1, file='0field.txt')
+      open(1, file='planar_field.txt')
+
+
 
       DO 5 I=1,3
          READ(1,*)V(I),BX(I),BY(I),BZ(I)
@@ -82,11 +125,26 @@
 
       DO 101 j=1,100
 
+        write(*,*) v
+        write(*,*) bx
+        write(*,*) by
+        write(*,*) bz
+
         T = dble(j)*.01d0
 
         TP = T
 
         do k = 1, 500
+
+          if (xc_guess.eq.1) then
+            DO I=1,3
+               N(I) = 0.D0
+               VHXC(I) = 0.D0
+               BXCX(I) = 0.D0
+               BXCY(I) = 0.D0
+               BXCZ(I) = 0.D0
+            end do
+          end if
 
           c = (250 - k) * .01d0
 
@@ -103,7 +161,6 @@
                 VT(I) = V(I) + VHXC(I)
                 BXT(I) = BX(I) + BXCX(I)
                 BYT(I) = BY(I) + BXCY(I)
-C                BZT(I) = BZ(I)
                 BZT(I) = BZ(I) + BXCZ(I)
 3         CONTINUE
 
@@ -129,8 +186,12 @@ C**----------------------------------------------------------------------
 C      N(3) = N(1)
 C      MZ(3) = MZ(1)
 
-          CALL XCPOT_BALDA(
+          if (xc_slater.eq.1) then
+            CALL XCPOT_SLATER(U0,0.d0,VXC,VHXC,BXCX,BXCY,BXCZ)
+          else
+            CALL XCPOT_BALDA(
      &             U0,T,VXC,VHXC,BXCX,BXCY,BXCZ,N,MX,MY,MZ,EC)
+          end if
 
           DO 21 I=1,3
              VHXC(I) = MIX*VHXC(I) + (1.D0-MIX)*VHXCO(I)
@@ -212,6 +273,16 @@ C      MZ(3) = MZ(1)
           if (k.eq.500) then
             do krev = 500, 1, -1
 
+              if (xc_guess.eq.1) then
+                DO I=1,3
+                   N(I) = 0.D0
+                   VHXC(I) = 0.D0
+                   BXCX(I) = 0.D0
+                   BXCY(I) = 0.D0
+                   BXCZ(I) = 0.D0
+                end do
+              end if
+
               c = (250 - krev) * .01d0
 
               cp = c
@@ -254,8 +325,12 @@ C**----------------------------------------------------------------------
 C      N(3) = N(1)
 C      MZ(3) = MZ(1)
 
-              CALL XCPOT_BALDA(
-     &              U0,T,VXC,VHXC,BXCX,BXCY,BXCZ,N,MX,MY,MZ,EC)
+              if (xc_slater.eq.1) then
+                CALL XCPOT_SLATER(U0,0.d0,VXC,VHXC,BXCX,BXCY,BXCZ)
+              else
+                CALL XCPOT_BALDA(
+     &             U0,T,VXC,VHXC,BXCX,BXCY,BXCZ,N,MX,MY,MZ,EC)
+              end if
 
               DO 210 I=1,3
                  VHXC(I) = MIX*VHXC(I) + (1.D0-MIX)*VHXCO(I)
@@ -345,10 +420,6 @@ C      MZ(3) = MZ(1)
         end do
 
 101   CONTINUE
-
-      ! open(111, file='0field_E.txt')
-      ! open(111, file='planar_E.txt')
-      open(111, file='smallz_E.txt')
 
       do k = 1, 500
         write(111, *) mmat(k, 3, 1)
@@ -594,3 +665,113 @@ C************************************************************************
       RETURN
       END
 C************************************************************************
+
+      SUBROUTINE XCPOT_SLATER(U0,U1,VXC,VHXC,BXCX,BXCY,BXCZ)
+      IMPLICIT NONE
+
+      INTEGER NP,I
+      PARAMETER (NP = 3)
+      DOUBLE COMPLEX NUU(NP),NUD(NP),NDU(NP),NDD(NP),
+     &               VUU(NP),VUD(NP),VDU(NP),VDD(NP),DEN(NP),
+     &               BUU(NP),BUD(NP),BDU(NP),BDD(NP),MAT(4,4),IONE,
+     &               GAMMA(2,2,NP,NP),PHI(2*NP,2,NP)
+      PARAMETER (IONE=(0.D0,1.D0))
+      DOUBLE PRECISION U0,U1,N(NP),MX(NP),MY(NP),MZ(NP),VH(NP),VXC(NP),
+     &                 VHXC(NP),BXCX(NP),BXCY(NP),BXCZ(NP),E(2*NP)
+
+      COMMON /EVALS/ E,PHI,GAMMA
+
+      DO 1 I=1,NP
+         NUU(I) = CDABS(PHI(1,1,I))**2 + CDABS(PHI(2,1,I))**2
+         NUD(I) = PHI(1,1,I)*DCONJG(PHI(1,2,I))
+     &          + PHI(2,1,I)*DCONJG(PHI(2,2,I))
+         NDU(I) = DCONJG(NUD(I))
+         NDD(I) = CDABS(PHI(1,2,I))**2 + CDABS(PHI(2,2,I))**2
+1     CONTINUE
+
+      DO 2 I=1,NP
+         N(I) = DREAL(NUU(I) + NDD(I))
+         MX(I) = DREAL(NUD(I) + NDU(I))
+         MY(I) = DREAL((0.D0,1.D0)*(NUD(I) - NDU(I)))
+         MZ(I) = DREAL(NUU(I) - NDD(I))
+2     CONTINUE
+
+      VH(1) = U0*N(1) + U1*N(2)
+      DO 3 I=2,NP-1
+         VH(I) = U0*N(I) + U1*N(I-1) + U1*N(I+1)
+3     CONTINUE
+      VH(NP) = U0*N(NP) + U1*N(NP-1)
+
+      DO 5 I=1,NP
+
+      BUU(I) = -2.D0*U0*(NUU(I)*NUU(I) + NUD(I)*NDU(I))
+      BDU(I) = -2.D0*U0*(NDU(I)*NUU(I) + NDD(I)*NDU(I))
+      BUD(I) = -2.D0*U0*(NUU(I)*NUD(I) + NUD(I)*NDD(I))
+      BDD(I) = -2.D0*U0*(NDU(I)*NUD(I) + NDD(I)*NDD(I))
+
+      IF (I.LT.NP) THEN
+      BUU(I) = BUU(I) -2.D0*U1*(GAMMA(1,1,I,I+1)*GAMMA(1,1,I+1,I)
+     &                         +GAMMA(1,2,I,I+1)*GAMMA(2,1,I+1,I))
+      BDU(I) = BDU(I) -2.D0*U1*(GAMMA(2,1,I,I+1)*GAMMA(1,1,I+1,I)
+     &                         +GAMMA(2,2,I,I+1)*GAMMA(2,1,I+1,I))
+      BUD(I) = BUD(I) -2.D0*U1*(GAMMA(1,1,I,I+1)*GAMMA(1,2,I+1,I)
+     &                         +GAMMA(1,2,I,I+1)*GAMMA(2,2,I+1,I))
+      BDD(I) = BDD(I) -2.D0*U1*(GAMMA(2,1,I,I+1)*GAMMA(1,2,I+1,I)
+     &                         +GAMMA(2,2,I,I+1)*GAMMA(2,2,I+1,I))
+      ENDIF
+
+      IF (I.GT.1) THEN
+      BUU(I) = BUU(I) -2.D0*U1*(GAMMA(1,1,I,I-1)*GAMMA(1,1,I-1,I)
+     &                         +GAMMA(1,2,I,I-1)*GAMMA(2,1,I-1,I))
+      BDU(I) = BDU(I) -2.D0*U1*(GAMMA(2,1,I,I-1)*GAMMA(1,1,I-1,I)
+     &                         +GAMMA(2,2,I,I-1)*GAMMA(2,1,I-1,I))
+      BUD(I) = BUD(I) -2.D0*U1*(GAMMA(1,1,I,I-1)*GAMMA(1,2,I-1,I)
+     &                         +GAMMA(1,2,I,I-1)*GAMMA(2,2,I-1,I))
+      BDD(I) = BDD(I) -2.D0*U1*(GAMMA(2,1,I,I-1)*GAMMA(1,2,I-1,I)
+     &                         +GAMMA(2,2,I,I-1)*GAMMA(2,2,I-1,I))
+      ENDIF
+
+5     CONTINUE
+
+      DO 10 I=1,NP
+         DEN(I) = 2.D0*N(I)*(NUU(I)*NDD(I)-NUD(I)*NDU(I))
+
+         MAT(1,1) = N(I)*NDD(I) - NUD(I)*NDU(I)
+         MAT(1,2) = -NDD(I)*NUD(I)
+         MAT(1,3) = -NDD(I)*NDU(I)
+         MAT(1,4) = NUD(I)*NDU(I)
+
+         MAT(2,1) = -NDD(I)*NDU(I)
+         MAT(2,2) = 2.D0*NUU(I)*NDD(I) - NUD(I)*NDU(I)
+         MAT(2,3) = NDU(I)**2
+         MAT(2,4) = -NUU(I)*NDU(I)
+
+         MAT(3,1) = -NDD(I)*NUD(I)
+         MAT(3,2) = NUD(I)**2
+         MAT(3,3) = 2.D0*NUU(I)*NDD(I) - NUD(I)*NDU(I)
+         MAT(3,4) = -NUU(I)*NUD(I)
+
+         MAT(4,1) = NUD(I)*NDU(I)
+         MAT(4,2) = -NUU(I)*NUD(I)
+         MAT(4,3) = -NUU(I)*NDU(I)
+         MAT(4,4) = N(I)*NUU(I) - NUD(I)*NDU(I)
+
+         VUU(I) = ( MAT(1,1)*BUU(I) + MAT(1,2)*BDU(I)
+     &            + MAT(1,3)*BUD(I) + MAT(1,4)*BDD(I) )/DEN(I)
+         VDU(I) = ( MAT(2,1)*BUU(I) + MAT(2,2)*BDU(I)
+     &            + MAT(2,3)*BUD(I) + MAT(2,4)*BDD(I) )/DEN(I)
+         VUD(I) = ( MAT(3,1)*BUU(I) + MAT(3,2)*BDU(I)
+     &            + MAT(3,3)*BUD(I) + MAT(3,4)*BDD(I) )/DEN(I)
+         VDD(I) = ( MAT(4,1)*BUU(I) + MAT(4,2)*BDU(I)
+     &            + MAT(4,3)*BUD(I) + MAT(4,4)*BDD(I) )/DEN(I)
+
+         VXC (I) = DREAL(VUU(I) + VDD(I))/2.D0
+         BXCX(I) = DREAL(VDU(I) + VUD(I))/2.D0
+         BXCY(I) = DREAL(-IONE*VDU(I) + IONE*VUD(I))/2.D0
+         BXCZ(I) = DREAL(VUU(I) - VDD(I))/2.D0
+
+         VHXC(I) = VH(I) + VXC(I)
+10    CONTINUE
+
+      RETURN
+      END
