@@ -42,27 +42,27 @@
 
       mode = 2
 
-      xc_guess = 1
-      xc_slater = 0
+      xc_guess = 0
+      xc_slater = 1
 
       do vec = 1, 3
         write(vec_files(vec), '(a,i1,a)')
-     &              'Site', vec, '-KSRev-smallz-Slater.txt'
-C     &              'Site', vec, '-KSRev-0field-Slater.txt'
+C     &              'Site', vec, '-KSRev-smallz-Slater.txt'
+     &              'Site', vec, '-KSRev-0field-PDiff.txt'
 C     &              'Site', vec, '-KSRev-planar-Slater.txt'
 
         if (xc_guess.eq.1) then
           write(vec_files(vec), '(a,i1,a)')
 C     &              'Site', vec, '-KSRev-smallz-noGuess.txt'
 C     &              'Site', vec, '-KSRev-0field-noGuess.txt'
-     &              'Site', vec, '-KSRev-planar-noGuess.txt'
+C     &              'Site', vec, '-KSRev-planar-noGuess.txt'
         end if
 
         open(1000+vec, file=vec_files(vec))
 
         write(vec_files(vec), '(a,i1,a)')
-     &              'Site', vec ,'-KSForward-smallz-Slater.txt'
-C     &              'Site', vec,'-KSForward-0field-Slater.txt'
+C     &              'Site', vec ,'-KSForward-smallz-Slater.txt'
+     &              'Site', vec,'-KSForward-0field-PDiff.txt'
 C     &              'Site', vec ,'-KSForward-planar-Slater.txt'
 
         if (xc_guess.eq.1) then
@@ -75,8 +75,8 @@ C     &              'Site', vec,'-KSForward-0field-noGuess.txt'
         open(2000+vec, file=vec_files(vec))
 
         write(vec_files(vec), '(a,i1,a)')
-     &            'Site', vec,'-KSBackward-smallz-Slater.txt'
-C     &            'Site', vec,'-KSBackward-0field-Slater.txt'
+C     &            'Site', vec,'-KSBackward-smallz-Slater.txt'
+     &            'Site', vec,'-KSBackward-0field-PDiff.txt'
 C     &            'Site', vec,'-KSBackward-planar-Slater.txt'
 
         if (xc_guess.eq.1) then
@@ -94,19 +94,19 @@ C     &            'Site', vec,'-KSBackward-0field-noGuess.txt'
       TOL = 1.D-8
 
 !      open(111, file='smallz_E-Slater.txt')
-!      open(111, file='0field_E-Slater.txt')
+      open(111, file='0field_E-PDiff.txt')
 !      open(111, file='planar_E-Slater.txt')
 
       if (xc_guess.eq.1) then
 C        open(111, file='smallz_E-noGuess.txt')
 C        open(111, file='0field_E-noGuess.txt')
-        open(111, file='planar_E-noGuess.txt')
+C        open(111, file='planar_E-noGuess.txt')
       end if
 
 C      open(1, file='smallz_field.txt')
 C      open(1, file='0field.txt')
-      open(1, file='planar_field.txt')
-
+C      open(1, file='planar_field.txt')
+      open(1, file='0field_PDiff.txt')
 
 
       DO 5 I=1,3
@@ -125,10 +125,10 @@ C      open(1, file='0field.txt')
 
       DO 101 j=1,100
 
-        write(*,*) v
-        write(*,*) bx
-        write(*,*) by
-        write(*,*) bz
+!        write(*,*) v
+!        write(*,*) bx
+!        write(*,*) by
+!        write(*,*) bz
 
         T = dble(j)*.01d0
 
@@ -155,7 +155,10 @@ C      open(1, file='0field.txt')
 
 1       CONTINUE
           ITER = ITER + 1
-          IF (ITER.GT.100000) call exit(-1)
+          IF (ITER.GT.100000) then
+            write(*,*) 'max iterations in loop #:', c, k
+            call exit(-1)
+          end if
 
           DO 3 I=1,3
                 VT(I) = V(I) + VHXC(I)
