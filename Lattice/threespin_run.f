@@ -1,12 +1,13 @@
       PROGRAM THREESPIN
       IMPLICIT NONE
 
-      INTEGER I,J,LWORK,MODE,INFO,outer
+      INTEGER I,J,LWORK,MODE,INFO,outer,it,time
       PARAMETER (LWORK = 500)
 
-      DOUBLE PRECISION U0,C,CP,T,TP,V(3),BX(3),BY(3),BZ(3)
+      DOUBLE PRECISION U0,C,CP,T,TP,V(3),BX(3),BY(3),BZ(3), dt
       DOUBLE PRECISION E(20),RWORK(100),N(3),MX(3),MY(3),MZ(3),ediff
-      DOUBLE COMPLEX M(20,20),WORK(LWORK)
+      DOUBLE COMPLEX M(20,20),WORK(LWORK), psin(20), psinp1(20)
+     &               , m0(20,20)
 
       ! T = 0.5D0
 !      WRITE(*,*)'C?'
@@ -23,6 +24,7 @@
 !         WRITE(*,*)'Invalid choice'
 !         STOP
 !      ENDIF
+      dt = .01d0
 
       U0 = 1.d0
 
@@ -49,12 +51,8 @@
 !           READ(1,*)V(I),BX(I),BY(I),BZ(I)
 !5       CONTINUE
 
-        DO 101 J=1,50000
-          if (j.lt.25000) then
-            C = (T * 0.5745d0) + j*1d-4
-          else
-            C = (T * 0.5745d0) - (25001 - j)*1.d-4
-          end if
+        DO 101 J=1,251
+          C = dble(J - 1) * .2d0
 
           CP = C
 
@@ -62,45 +60,76 @@
 
           CALL ZHEEV( 'V', 'U', 20, M, 20, E, WORK, LWORK, RWORK, INFO )
 
+          do it = 1, 20
+            psin = m(it, 1)
+          end do
+
 C**----------------------------------------------------------------------
 C**   calculate the densities:
 C**----------------------------------------------------------------------
           CALL DENCALC(M,N,MX,MY,MZ)
 
-          IF (outer.EQ.1.and.j.eq.1) THEN
-            write(20,*)'# N'
-            write(20,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
-     &                 ',  t/U0  ,  C/U0'
+    !       IF (outer.EQ.1.and.j.eq.1) THEN
+    !         write(20,*)'# N'
+    !         write(20,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
+    !  &                 ',  t/U0  ,  C/U0'
 
-            write(21,*)'# MX'
-            write(21,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
-     &                 ',  t/U0  ,  C/U0'
+    !         write(21,*)'# MX'
+    !         write(21,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
+    !  &                 ',  t/U0  ,  C/U0'
 
-            write(22,*)'# MY'
-            write(22,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
-     &                 ',  t/U0  ,  C/U0'
+    !         write(22,*)'# MY'
+    !         write(22,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
+    !  &                 ',  t/U0  ,  C/U0'
 
-            write(23,*)'# MZ'
-            write(23,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
-     &                 ',  t/U0  ,  C/U0'
+    !         write(23,*)'# MZ'
+    !         write(23,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
+    !  &                 ',  t/U0  ,  C/U0'
 
-          END IF
+    !       END IF
 
-          WRITE(20,*)real(U0),real(N(1)),real(N(2)),real(N(3)), t/U0,
-     &                 C/U0
-          WRITE(21,*)real(U0),real(MX(1)),real(MX(2)),real(MX(3)), t/U0,
-     &                 C/U0
-          WRITE(22,*)real(U0),real(MY(1)),real(MY(2)),real(MY(3)), t/U0,
-     &                 C/U0
-          WRITE(23,*)real(U0),real(MZ(1)),real(MZ(2)),real(MZ(3)), t/U0,
-     &                 C/U0
+    !       WRITE(20,*)real(U0),real(N(1)),real(N(2)),real(N(3)), t/U0,
+    !  &                 C/U0
+    !       WRITE(21,*)real(U0),real(MX(1)),real(MX(2)),real(MX(3)), t/U0,
+    !  &                 C/U0
+    !       WRITE(22,*)real(U0),real(MY(1)),real(MY(2)),real(MY(3)), t/U0,
+    !  &                 C/U0
+    !       WRITE(23,*)real(U0),real(MZ(1)),real(MZ(2)),real(MZ(3)), t/U0,
+    !  &                 C/U0
 
-          ediff = e(2) - (e(3))
+          ! ediff = e(2) - (e(3))
 
-          ! WRITE(25,*)real(U0),real(E(1))
+           ! WRITE(25,*)real(U0),real(E(1))
           if (dabs(ediff).lt.1d-4) then
-            write(25,*)t/U0, C/U0, e(2), e(3)
-            ! write(*,*) c, t, e(2), e(3)
+
+            write(*,*) 'entering time_prop'
+
+            ! v = 0.d0
+            ! bx = 0.d0
+            ! by = 0.d0
+            ! bz = 0.d0
+
+            CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
+
+            t = 0.d0
+            M0 = M
+            do time = 1, 500
+              t = t + time * dt
+              call time_prop(M0, M, psin, psinp1, dt)
+
+              write(*,*) M
+              write(*,*) '___________________________________'
+              write(*,*) M0
+              call exit(-1)
+              call DENCALC(M, N, MX, MY, MZ)
+              write(*,*) time
+              write(*,*) n
+              write(*,*) mx
+              write(*,*) my
+              write(*,*) mz
+              M0 = M
+            end do
+
           end if
 
           ! write(*,*) outer
@@ -109,67 +138,70 @@ C**----------------------------------------------------------------------
 
 101     CONTINUE
 
-        DO J=1,500
-          if (j.lt.250) then
-            C = (250.d0 - j) * 0.01d0
-          else
-            C = (j - 250.d0) * 0.01d0
-          end if
-
-          CP = C
-
-          CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
-
-          CALL ZHEEV( 'V', 'U', 20, M, 20, E, WORK, LWORK, RWORK, INFO )
-
-C**----------------------------------------------------------------------
-C**   calculate the densities:
-C**----------------------------------------------------------------------
-          CALL DENCALC(M,N,MX,MY,MZ)
-
-          IF (outer.EQ.1.and.j.eq.1) THEN
-            write(20,*)'# N'
-            write(20,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
-     &                 ',  t/U0  ,  C/U0'
-
-            write(21,*)'# MX'
-            write(21,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
-     &                 ',  t/U0  ,  C/U0'
-
-            write(22,*)'# MY'
-            write(22,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
-     &                 ',  t/U0  ,  C/U0'
-
-            write(23,*)'# MZ'
-            write(23,*)'# U0 ,   site 1   ,   site2   ,  site3  ',
-     &                 ',  t/U0  ,  C/U0'
-
-          END IF
-
-          WRITE(20,*)real(U0),real(N(1)),real(N(2)),real(N(3)), t/U0,
-     &                 C/U0
-          WRITE(21,*)real(U0),real(MX(1)),real(MX(2)),real(MX(3)), t/U0,
-     &                 C/U0
-          WRITE(22,*)real(U0),real(MY(1)),real(MY(2)),real(MY(3)), t/U0,
-     &                 C/U0
-          WRITE(23,*)real(U0),real(MZ(1)),real(MZ(2)),real(MZ(3)), t/U0,
-     &                 C/U0
-
-          ediff = e(2) - (e(3))
-
-          ! WRITE(25,*)real(U0),real(E(1))
-          ! if (dabs(ediff).lt.1d-4) then
-            write(26,*)t/U0, C/U0, e(2), e(3)
-            ! write(*,*) c, t, e(2), e(3)
-
-        end do
-
-
       end do
 
       close(26)
 
       END
+
+C************************************************************************
+C************************************************************************
+C************************************************************************
+      SUBROUTINE time_prop(M0, t_matrix, psin, psinp1, dt)
+      IMPLICIT NONE
+
+      INTEGER I, J, ipiv(20), INFO
+      DOUBLE PRECISION U0,C,CP,T,TP,dt
+      DOUBLE PRECISION V(3),BX(3),BY(3),BZ(3)
+
+      DOUBLE COMPLEX M0(20,20), t_matrix(20, 20)
+     &               , psin(20), psinp1(20), rhs(20)
+      DOUBLE COMPLEX ZERO,ONE,IONE
+      PARAMETER (ZERO=(0.D0,0.D0),ONE=(1.D0,0.D0),IONE=(0.D0,1.D0))
+
+
+!   Right-side of the crank-nicolson propagation.
+
+      t_matrix = zero
+
+      do i = 1, 20
+        do j = 1, 20
+          t_matrix(i, j) = -0.5d0 * ione * M0(i,j) * dt 
+          if (i.eq.j) then
+            t_matrix(i, j) = one + t_matrix(i, j)
+          end if
+        end do
+      end do
+
+!   Multiplying wavefunction by Hamiltonian propagation. 
+
+      DO I=1, 20
+        rhs(i) = zero
+        DO J=1,20
+            rhs(i) = Rhs(i) + t_matrix(I,J) * psin(J)
+        ENDDO
+      ENDDO
+
+!   Left-side of the crank-nicolson propagation.
+
+      do i = 1, 20
+        do j = 1, 20
+          t_matrix(i, j) = 0.5d0 * ione * M0(i,j) * dt 
+          if (i.eq.j) then
+            t_matrix(i, j) = one + t_matrix(i, j)
+          end if
+        end do
+      end do
+
+!   Call linear equation solver for Psi^(n+1)(t)
+      call zgesv(20, 1, t_matrix, 20, IPIV, rhs, 20, INFO)
+
+      do i = 1, 20
+        psinp1(i) = rhs(i)
+      end do
+    
+      end subroutine
+
 C************************************************************************
 C************************************************************************
 C************************************************************************
