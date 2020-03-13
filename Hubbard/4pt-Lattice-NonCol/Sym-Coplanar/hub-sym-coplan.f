@@ -7,20 +7,21 @@ C  as portability of the code to future programs.
       Implicit none
 
       integer :: i,j,k,iter,it,steps,bmag,
-     &           wxcflg, wdflg, wmflg, weflg, wextflg, txcflg, wbflg
+     &           wxcflg, wdflg, wmflg, weflg, wextflg, txcflg, wbflg,
+     &           wlflg
 
       real(8) :: ftol,fret,fretlo,x
       real(8) :: Bx(sites), By(sites), Bz(sites),mags(sites+1)
-      real(8) :: U0,U1
-      real(8) :: vhxc(sites),bxc(intd),vlo(dim*2),vtest(dim*2),
+      real(8) :: U0,U1,dU
+      real(8) :: vhxc(dim*2),bxc(intd),vlo(dim*2),vtest(dim*2),
      &           vstart(dim*2),v(dim*2),dens(dim*2),vprev(dim*2),
-     &           longd(dim*2)
-      complex(8) :: htest(intd,intd),hlong(dim,dim)
+     &           longd(dim*2), cn(intd)
+      complex(8) :: htest(intd,intd),hlong(dim,dim),dumh(intd,intd)
       real(8) :: tau(3),tx(sites),ty(sites),tz(sites),tplot(sites+2),
      &           bt(sites),btx(sites),bty(sites),btz(sites),
      &           bl(sites),blx(sites),bly(sites),blz(sites),
      &           texx(sites), texy(sites), texz(sites),
-     &           bmet, dx, theta(sites), titer(sites+1)
+     &           bmet, dx, theta(sites), titer(sites+1), mdotb(sites+1)
 
       character(30) :: mwx, mwy, mwz, mwn, met, twx, twy, twz,
      &                 ttotwx, ttotwy, ttotwz, ttotp
@@ -37,24 +38,27 @@ C  as portability of the code to future programs.
       dx = 1d-5
       steps = 5
 
-      txcflg = 0
-      wextflg = 0
-      weflg = 0
-      wxcflg = 0
-      wdflg = 0
+      dU = 0.1d0
+
+      txcflg = 1
+      wextflg = 1
+      weflg = 1
+      wxcflg = 1
+      wdflg = 1
       wmflg = 0
       wbflg = 1
+      wlflg = 0
 
       if (wmflg.eq.1) then
 
-        write(mwn,'(a)') '4pt-SymCP-U20-Map-n.txt'
-        write(mwx,'(a)') '4pt-SymCP-U20-Map-x.txt'
-        write(mwy,'(a)') '4pt-SymCP-U20-Map-y.txt'
-        write(mwz,'(a)') '4pt-SymCP-U20-Map-z.txt'
+        write(mwn,'(a)') 'Test-SymCP-U20-Map-n.txt'
+        write(mwx,'(a)') 'Test-SymCP-U20-Map-x.txt'
+        write(mwy,'(a)') 'Test-SymCP-U20-Map-y.txt'
+        write(mwz,'(a)') 'Test-SymCP-U20-Map-z.txt'
 
-        write(ttotwx,'(a)') '4pt-SymCP-U20-TorqT-x.txt'
-        write(ttotwy,'(a)') '4pt-SymCP-U20-TorqT-y.txt'
-        write(ttotwz,'(a)') '4pt-SymCP-U20-TorqT-z.txt'
+        write(ttotwx,'(a)') 'Test-SymCP-U20-TorqT-x.txt'
+        write(ttotwy,'(a)') 'Test-SymCP-U20-TorqT-y.txt'
+        write(ttotwz,'(a)') 'Test-SymCP-U20-TorqT-z.txt'
 
         open(100,file = mwn)
         open(101,file = mwx)
@@ -119,7 +123,7 @@ C  as portability of the code to future programs.
 
         end if
 
-!        write(met,'(a,i1,a)') '4pt-B', bmag, '-CNC-Metric.txt'
+!        write(met,'(a,i1,a)') 'Test-B', bmag, '-CNC-Metric.txt'
 !        write(*,*) mwn, mwx, mwy, mwz
 ***************************************************************************
 ***   Setting the initial potentials which will generate our target density.
@@ -138,7 +142,8 @@ C  as portability of the code to future programs.
 ***************************************************************************
 ***   Solving the initial Schrodinger equation for our system via hbuild.
 ***************************************************************************
-        do it=0, 200
+        U0 = 0.d0
+        do it=0, 100
 
           fretlo = 1.d0
           vlo = 0.d0
@@ -146,16 +151,26 @@ C  as portability of the code to future programs.
           v = vstart
 
 !        write(*,*)
-          write(*,*) '************************************'
-          write(*,*) it
+
+!          if (it.lt.80.and.it.eq.0) then
+!            U0 = U0
+!          elseif (it.lt.80.and.it.ne.0) then
+!            U0 = U0 + dU
+!          else
+!            U0 = U0 + dU/2.d0
+!          end if
 
           U0 = dble(it)/10.d0
+
+          write(*,*) '************************************'
+          write(*,*) U0
+
 !        U0 = 0.d0
           U1 = U0/2.d0
 !        U1 = 0.d0
           ntarget = 0.d0
 
-          call interHam(v,U0,U1,htest)
+          call interHam(v,U0,U1,htest,cn)
           call intdens(ntarget,htest)
 
 ***************************************************************************
@@ -163,7 +178,7 @@ C  as portability of the code to future programs.
 ***   subroutine.
 ***************************************************************************
 !        number = 0
-!          if (it.gt.1) v=vprev
+          if (it.gt.1) v=vprev
 !          write(*,vector) vprev
 
           call frprmn(v,dim*2,ftol,iter,fret)
@@ -176,7 +191,7 @@ C  as portability of the code to future programs.
           fretlo = fret
           vlo = v
 
-          if (fret.gt.1d-14) then
+          if (fretlo.gt.1d-14) then
 
 !          call StepMin(steps, dx, v, ftol, iter, fret, fretlo)
 
@@ -189,19 +204,26 @@ C  as portability of the code to future programs.
             write(*,*) iter, ftol, fret
 
             if (fret.lt.fretlo) then
+              write(*,*) 'rewriting fretlo'
               fretlo = fret
               vlo = v
             end if
 
           end if
 
-          if (fret.gt.1d-6) then
+          if (fretlo.gt.1d-12) then
+            v=vprev
+            call StepMin(steps, dx, v, ftol, iter, fret, fretlo)
+            write(*,*) fretlo
+          end if
+
+          if (fretlo.gt.1d-6) then
+            v=vstart
             call StepMin(steps, dx, v, ftol, iter, fret, fretlo)
             vlo = v
           end if
 
           vprev = vlo
-
 
 ***   Final check to ensure ntarget is equivalent to the density found by our
 ***   conjugate gradient method.
@@ -210,30 +232,39 @@ C  as portability of the code to future programs.
           call densvec(dens,hmat)
 
           vhxc = 0.d0
-          do i=1,sites
+          do i=1,dim*2
             vhxc(i) = vlo(i) - vstart(i)
           end do
 
           if (wbflg.eq.1) then
             if (bmag.lt.10) then
-              write(mwx,'(a,i1,a)') '4pt-B', bmag, '-SymCP-bxcx.txt'
-              write(mwy,'(a,i1,a)') '4pt-B', bmag, '-SymCP-bxcy.txt'
-              write(mwz,'(a,i1,a)') '4pt-B', bmag, '-SymCP-bxcz.txt'
+              write(mwn,'(a,i1,a)') 'Test-B', bmag, '-SymCP-vxc.txt'
+              write(mwx,'(a,i1,a)') 'Test-B', bmag, '-SymCP-bxcx.txt'
+              write(mwy,'(a,i1,a)') 'Test-B', bmag, '-SymCP-bxcy.txt'
+              write(mwz,'(a,i1,a)') 'Test-B', bmag, '-SymCP-bxcz.txt'
             elseif (bmag.eq.10) then
-              write(mwx,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-bxcx.txt'
-              write(mwy,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-bxcy.txt'
-              write(mwz,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-bxcz.txt'
+            write(mwn,'(a,i2,a)') 'Test-B', bmag, '-SymCP-vxc.txt'
+            write(mwx,'(a,i2,a)') 'Test-B', bmag, '-SymCP-U20-bxcx.txt'
+            write(mwy,'(a,i2,a)') 'Test-B', bmag, '-SymCP-U20-bxcy.txt'
+            write(mwz,'(a,i2,a)') 'Test-B', bmag, '-SymCP-U20-bxcz.txt'
             elseif (bmag.eq.11) then
-              write(mwx,'(a)') '4pt-B01-SymCP-U20-bxcx.txt'
-              write(mwy,'(a)') '4pt-B01-SymCP-U20-bxcy.txt'
-              write(mwz,'(a)') '4pt-B01-SymCP-U20-bxcz.txt'
+              write(mwx,'(a)') 'Test-B01-SymCP-U20-bxcx.txt'
+              write(mwy,'(a)') 'Test-B01-SymCP-U20-bxcy.txt'
+              write(mwz,'(a)') 'Test-B01-SymCP-U20-bxcz.txt'
             end if
 
+            open(110,file = mwn)
             open(111,file = mwx)
             open(112,file = mwy)
             open(113,file = mwz)
 
             titer(1) = U0
+
+            do i = 1, sites
+              titer(i+1) = vhxc(i)
+            end do
+            write(110,tprint) titer
+
             do i = 1, sites
               titer(i+1) = vhxc(sites + i)
             end do
@@ -249,8 +280,17 @@ C  as portability of the code to future programs.
             end do
             write(113,tprint) titer
 
-          end if
+            mdotb(1) = u0
+            open(99, file = 'Test-B1-SymCP-mdotb.txt')
+            do i = 1, sites
+              mdotb(i+1) = dens(sites + i)*vhxc(sites + i)
+     &                   + dens(sites*2 + i)*vhxc(sites*2 + i)
+     &                   + dens(sites*3 + i)*vhxc(sites*3 + i)
+            end do
 
+            write(99,tprint) mdotb
+
+          end if
 
 !          call tcalc(dens,v,vstart,tau,tx,ty,tz)
           call tcalc(dens,vlo,vstart,tau,tx,ty,tz)
@@ -258,9 +298,9 @@ C  as portability of the code to future programs.
 
           tplot(1) = u0
           tplot(2) = bx(1)
-          write(*,*) tplot(2)
+!          write(*,*) tplot(2)
 
-!        open(200,file='4pt-YTorq-4BxBz-wStep.txt')
+!        open(200,file='Test-YTorq-4BxBz-wStep.txt')
 !        write(200,tprint) tplot
 !        write(*,tprint) tplot
 !          write(*,*) 'torque x            torque y             torque z'
@@ -277,42 +317,96 @@ C  as portability of the code to future programs.
 !          call metric(bmet,btx,bty,btz,vlo,vstart)
 
 !          call blong(dens,v,vstart,bl,blx,bly,blz)
-          call blong(dens,vlo,vstart,bl,blx,bly,blz)
+!          call blong(dens,vlo,vstart,bl,blx,bly,blz)
 
 !          call bpar(dens,vlo,vstart,bl,blx,bly,blz)
 
-          vtest = 0.d0
-          do i=1,sites
-            vtest(i) = vstart(i) + vhxc(i)
-            vtest(sites + i) = vstart(sites + i) + blx(i)
-            vtest(sites*2 + i) = vstart(sites*2 + i) + bly(i)
-            vtest(sites*3 + i) = vstart(sites*3 + i) + blz(i)
-          end do
+!          vtest = 0.d0
+!          do i=1,sites
+!            vtest(i) = vstart(i) + vhxc(i)
+!            vtest(sites + i) = vstart(sites + i) + blx(i)
+!            vtest(sites*2 + i) = vstart(sites*2 + i) + bly(i)
+!            vtest(sites*3 + i) = vstart(sites*3 + i) + blz(i)
+!          end do
 
-          call hbuild(vtest,hlong)
-          call densvec(longd,hlong)
+          titer(1) = u0
+
+          if (wlflg.eq.1) then
+
+            call hbuild(vtest,hlong)
+            call densvec(longd,hlong)
+
+            if (bmag.lt.10) then
+            write(mwn,'(a,i1,a)') 'Test-B', bmag, '-SymCP-nlong-t.txt'
+            write(mwx,'(a,i1,a)') 'Test-B', bmag, '-SymCP-mxlong-t.txt'
+            write(mwy,'(a,i1,a)') 'Test-B', bmag, '-SymCP-mylong-t.txt'
+            write(mwz,'(a,i1,a)') 'Test-B', bmag, '-SymCP-mzlong-t.txt'
+            elseif (bmag.eq.10) then
+            write(mwn,'(a,i2,a)') 'Test-B', bmag, '-SymCP-nlong-t.txt'
+            write(mwx,'(a,i2,a)') 'Test-B', bmag, '-SymCP-mxlong-t.txt'
+            write(mwy,'(a,i2,a)') 'Test-B', bmag, '-SymCP-mylong-t.txt'
+            write(mwz,'(a,i2,a)') 'Test-B', bmag, '-SymCP-mzlong-t.txt'
+            elseif (bmag.eq.11) then
+              write(mwn,'(a)') 'Test-B01-SymCP-n.txt'
+              write(mwx,'(a)') 'Test-B01-SymCP-mx.txt'
+              write(mwy,'(a)') 'Test-B01-SymCP-my.txt'
+              write(mwz,'(a)') 'Test-B01-SymCP-mz.txt'
+            end if
+
+            open(500,file = mwn)
+            open(501,file = mwx)
+            open(502,file = mwy)
+            open(503,file = mwz)
+
+            open(504,file = 'Test-SymCP-Elong.txt')
+
+            do i=1, sites
+              titer(i+1) = longd(i)
+            end do
+            write(500, tprint) titer
+
+            do i=1, sites
+              titer(i+1) = longd(sites+i)
+            end do
+            write(501, tprint) titer
+
+            do i=1, sites
+              titer(i+1) = longd(sites*2+i)
+            end do
+            write(502, tprint) titer
+
+            do i=1, sites
+              titer(i+1) = longd(sites*3+i)
+            end do
+            write(503, tprint) titer
+
+            call interHam(vtest,0.d0,U1,dumh,cn)
+            write(504, *) u0, cn(1)
+
+          end if
+
 
 !          call CalcAngle(theta, dens, longd)
 
-!          write(mwx,'(a,i1,a)') '4pt-B', bmag, '-CNC-theta.txt'
+!          write(mwx,'(a,i1,a)') 'Test-B', bmag, '-CNC-theta.txt'
 
           if (wdflg.eq.1) then
 
             if (bmag.lt.10) then
-              write(mwn,'(a,i1,a)') '4pt-B', bmag, '-SymCP-U20-n.txt'
-              write(mwx,'(a,i1,a)') '4pt-B', bmag, '-SymCP-U20-mx.txt'
-              write(mwy,'(a,i1,a)') '4pt-B', bmag, '-SymCP-U20-my.txt'
-              write(mwz,'(a,i1,a)') '4pt-B', bmag, '-SymCP-U20-mz.txt'
+            write(mwn,'(a,i1,a)') 'Test-B', bmag, '-SymCP-U20-n.txt'
+            write(mwx,'(a,i1,a)') 'Test-B', bmag, '-SymCP-U20-mx.txt'
+            write(mwy,'(a,i1,a)') 'Test-B', bmag, '-SymCP-U20-my.txt'
+            write(mwz,'(a,i1,a)') 'Test-B', bmag, '-SymCP-U20-mz.txt'
             elseif (bmag.eq.10) then
-              write(mwn,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-n.txt'
-              write(mwx,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-mx.txt'
-              write(mwy,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-my.txt'
-              write(mwz,'(a,i2,a)') '4pt-B', bmag, '-SymCP-U20-mz.txt'
+            write(mwn,'(a,i2,a)') 'Test-B', bmag, '-SymCP-U20-n.txt'
+            write(mwx,'(a,i2,a)') 'Test-B', bmag, '-SymCP-U20-mx.txt'
+            write(mwy,'(a,i2,a)') 'Test-B', bmag, '-SymCP-U20-my.txt'
+            write(mwz,'(a,i2,a)') 'Test-B', bmag, '-SymCP-U20-mz.txt'
             elseif (bmag.eq.11) then
-              write(mwn,'(a)') '4pt-B01-SymCP-U20-n.txt'
-              write(mwx,'(a)') '4pt-B01-SymCP-U20-mx.txt'
-              write(mwy,'(a)') '4pt-B01-SymCP-U20-my.txt'
-              write(mwz,'(a)') '4pt-B01-SymCP-U20-mz.txt'
+              write(mwn,'(a)') 'Test-B01-SymCP-U20-n.txt'
+              write(mwx,'(a)') 'Test-B01-SymCP-U20-mx.txt'
+              write(mwy,'(a)') 'Test-B01-SymCP-U20-my.txt'
+              write(mwz,'(a)') 'Test-B01-SymCP-U20-mz.txt'
             end if
 
             open(30,file = mwn)
@@ -325,18 +419,18 @@ C  as portability of the code to future programs.
           if (wxcflg.eq.1) then
 
             if (bmag.lt.10) then
-              write(twx,'(a,i1,a)') '4pt-B', bmag,'-XC-SymCP-U20-tx.txt'
-              write(twy,'(a,i1,a)') '4pt-B', bmag,'-XC-SymCP-U20-ty.txt'
-              write(twz,'(a,i1,a)') '4pt-B', bmag,'-XC-SymCP-U20-tz.txt'
-            elseif (bmag.eq.10) then
-              write(twx,'(a,i2,a)') '4pt-B', bmag,'-XC-SymCP-U20-tx.txt'
-              write(twy,'(a,i2,a)') '4pt-B', bmag,'-XC-SymCP-U20-ty.txt'
-              write(twz,'(a,i2,a)') '4pt-B', bmag,'-XC-SymCP-U20-tz.txt'
-            else
-              write(twx,'(a)') '4pt-B01-XC-SymCP-U20-tx.txt'
-              write(twy,'(a)') '4pt-B01-XC-SymCP-U20-ty.txt'
-              write(twz,'(a)') '4pt-B01-XC-SymCP-U20-tz.txt'
-            end if
+            write(twx,'(a,i1,a)') 'Test-B', bmag,'-XC-SymCP-U20-tx.txt'
+            write(twy,'(a,i1,a)') 'Test-B', bmag,'-XC-SymCP-U20-ty.txt'
+            write(twz,'(a,i1,a)') 'Test-B', bmag,'-XC-SymCP-U20-tz.txt'
+          elseif (bmag.eq.10) then
+            write(twx,'(a,i2,a)') 'Test-B', bmag,'-XC-SymCP-U20-tx.txt'
+            write(twy,'(a,i2,a)') 'Test-B', bmag,'-XC-SymCP-U20-ty.txt'
+            write(twz,'(a,i2,a)') 'Test-B', bmag,'-XC-SymCP-U20-tz.txt'
+          else
+            write(twx,'(a)') 'Test-B01-XC-SymCP-U20-tx.txt'
+            write(twy,'(a)') 'Test-B01-XC-SymCP-U20-ty.txt'
+            write(twz,'(a)') 'Test-B01-XC-SymCP-U20-tz.txt'
+          end if
 
             open(301,file = twx)
             open(302,file = twy)
@@ -459,23 +553,23 @@ C  as portability of the code to future programs.
           if (wextflg.eq.1) then
 
             if (bmag.lt.10) then
-              write(twx,'(a,i1,a)') '4pt-B', bmag,
+              write(twx,'(a,i1,a)') 'Test-B', bmag,
      &                                      '-Ext-SymCP-U20-tx.txt'
-              write(twy,'(a,i1,a)') '4pt-B', bmag,
+              write(twy,'(a,i1,a)') 'Test-B', bmag,
      &                                      '-Ext-SymCP-U20-ty.txt'
-              write(twz,'(a,i1,a)') '4pt-B', bmag,
+              write(twz,'(a,i1,a)') 'Test-B', bmag,
      &                                      '-Ext-SymCP-U20-tz.txt'
             elseif (bmag.eq.10) then
-              write(twx,'(a,i2,a)') '4pt-B', bmag,
+              write(twx,'(a,i2,a)') 'Test-B', bmag,
      &                                      '-Ext-SymCP-U20-tx.txt'
-              write(twy,'(a,i2,a)') '4pt-B', bmag,
+              write(twy,'(a,i2,a)') 'Test-B', bmag,
      &                                      '-Ext-SymCP-U20-ty.txt'
-              write(twz,'(a,i2,a)') '4pt-B', bmag,
+              write(twz,'(a,i2,a)') 'Test-B', bmag,
      &                                      '-Ext-SymCP-U20-tz.txt'
             elseif (bmag.eq.11) then
-              write(twx,'(a)') '4pt-B01-Ext-SymCP-U20-tx.txt'
-              write(twy,'(a)') '4pt-B01-Ext-SymCP-U20-ty.txt'
-              write(twz,'(a)') '4pt-B01-Ext-SymCP-U20-tz.txt'
+              write(twx,'(a)') 'Test-B01-Ext-SymCP-U20-tx.txt'
+              write(twy,'(a)') 'Test-B01-Ext-SymCP-U20-ty.txt'
+              write(twz,'(a)') 'Test-B01-Ext-SymCP-U20-tz.txt'
             end if
 
             open(401,file = twx)
@@ -501,10 +595,10 @@ C  as portability of the code to future programs.
 
           if (txcflg.eq.1) then
 
-            write(mwn,'(a)') '4pt-B1-SymCP-0txc-n.txt'
-            write(mwx,'(a)') '4pt-B1-SymCP-0txc-mx.txt'
-            write(mwy,'(a)') '4pt-B1-SymCP-0txc-my.txt'
-            write(mwz,'(a)') '4pt-B1-SymCP-0txc-mz.txt'
+            write(mwn,'(a)') 'Test-B1-SymCP-0txc-n.txt'
+            write(mwx,'(a)') 'Test-B1-SymCP-0txc-mx.txt'
+            write(mwy,'(a)') 'Test-B1-SymCP-0txc-my.txt'
+            write(mwz,'(a)') 'Test-B1-SymCP-0txc-mz.txt'
 
             if (it.gt.0) then
               open(900, file=mwn, access='append')
@@ -524,8 +618,6 @@ C  as portability of the code to future programs.
               titer(i+1) = longd(i)
             end do
             write(900,tprint) titer
-
-            write(*,tprint) titer
 
             do i=1, sites
               titer(i+1) = longd(sites+i)
@@ -552,13 +644,13 @@ C  as portability of the code to future programs.
           if (weflg.eq.1) then
 
             if (bmag.lt.10) then
-              write(twx,'(a,i1,a)') '4pt-B', bmag,
+              write(twx,'(a,i1,a)') 'Test-B', bmag,
      &                                      '-Exact-SymCP-U20-E.txt'
             elseif (bmag.eq.10) then
-              write(twx,'(a,i2,a)') '4pt-B', bmag,
+              write(twx,'(a,i2,a)') 'Test-B', bmag,
      &                                      '-Exact-SymCP-U20-E.txt'
             elseif (bmag.eq.11) then
-              write(twx,'(a)') '4pt-B01-Exact-SymCP-U20-E.txt'
+              write(twx,'(a)') 'Test-B01-Exact-SymCP-U20-E.txt'
             end if
 
             open(11,file = twx)

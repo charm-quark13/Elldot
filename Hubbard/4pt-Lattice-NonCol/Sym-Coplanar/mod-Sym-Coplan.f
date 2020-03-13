@@ -711,7 +711,7 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 
 ****************************************************************************
 
-      subroutine interHam(v,U0,U1,ham)
+      subroutine interHam(v,U0,U1,ham,cn)
       implicit none
 
       real(8), intent(in) :: v(dim*2),U0,U1
@@ -1207,6 +1207,7 @@ C**------------------------------------------------------------
       real(8) :: vstart(dim*2), vprev(dim*2)
 
       do pass = 1, steps
+        write(*,*) 'Step #:', pass
         do i = 1, dim*2
           v(i) = vstart(i) + steps*dx
           call frprmn(v, dim*2, ftol, iter, fret)
