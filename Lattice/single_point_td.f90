@@ -4,17 +4,20 @@ implicit none
 integer :: I,J,MODE,INFO,outer,it,time
 integer, PARAMETER :: LWORK = 500
 
-real(8) :: U0,C,CP,T,TP,V(3),BX(3),BY(3),BZ(3),t2,dt
+real(8) :: U0,C,CP,T,TP,V(3),BX(3),BY(3),BZ(3),t2,dt, &
+           v0(3),BX0(3),BY0(3),BZ0(3)
 real(8) :: E(20),RWORK(100),N(3),MX(3),MY(3),MZ(3),ediff
+
 complex(8) :: M(20,20),WORK(LWORK), psin(20), psinp1(20) &
-               , m0(20,20), temp_mat(20,20)
+               , m0(20,20), temp_mat(20,20), m_org(20,20)
+complex(8), PARAMETER :: ZERO=(0.D0,0.D0),ONE=(1.D0,0.D0),IONE=(0.D0,1.D0)
 
 character(50) :: wmat, wsite
 
 write(wmat,'(a)') '(5f15.9)'
 
 dt = .01d0
-
+t2 = 0.d0
 U0 = 1.d0
 
 open(1, file='planar_field.txt')
@@ -24,6 +27,11 @@ do i=1,3
 end do
 
 close(1)
+
+v0 = v
+bx0 = bx
+by0 = BY
+bz0 = BZ
 
 T = .6d0
 
@@ -35,10 +43,12 @@ MODE = 2
 !           READ(1,*)V(I),BX(I),BY(I),BZ(I)
 !5       CONTINUE
 
-C = 0.75d0
+C = 0.5d0
 CP = C
 
 CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
+
+m_org = m
 
 CALL ZHEEV( 'V', 'U', 20, M, 20, E, WORK, LWORK, RWORK, INFO )
 
@@ -51,38 +61,76 @@ end do
 ! C**----------------------------------------------------------------------
 CALL DENCALC(M,N,MX,MY,MZ)
 
-! do i = 1, 20
-!     write(*,*) m(i, 1) - psin(i)
-! end do
-
-CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
-
 do i = 1, 3
     write(wsite, '(a, i1, a)') 'site-', i, '_tddensity.txt'
     open(20+i, file=wsite)
 end do
 
-t2 = 0.d0
-M0 = M
-do time = 1, 500
-    t2 = t2 + dt
+do i = 1, 3
+    write(20+i, wmat) t2, dble(n(i)), dble(mx(i)), dble(my(i)), dble(mz(i))
+end do
 
-    ! do i = 1, 3
-    !     v(i) = t2 * .01d0
-    !     bx(i) = 0.d0
-    !     by(i) = 0.d0
-    !     bz(i) = 0.d0
-    ! end do
+
+
+! do i = 1, 20
+!     write(*,*) m(i, 1) - psin(i)
+! end do
+
+temp_mat = zero
+
+! do i = 1, 3
+!     v(i) = 0.0d0
+!     ! bx(i) = 0.d0
+!     bx(i) = 0.d0
+!     by(i) = 0.d0
+!     ! bz(i) = 1.d-12
+!     bz(i) = 1.d-11
+! end do
+
+! v(1) = -1.d0
+
+CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
+
+do time = 1, 1000
+    t2 = t2 + dt
 
     ! do i=1, 20
     !     write(*,*) m(i,1) - m0(i,1)
     ! end do
 
-    call time_prop(M0, M, psin, psinp1, dt)
+    if (time.eq.1) then
+        do i = 1, 3
+            v(i) = 0.0d0
+            ! bx(i) = 0.d0
+            bx(i) = 0.d0
+            by(i) = 0.d0
+            ! bz(i) = 1.d-12
+            bz(i) = 1.d-5
+        end do
+        CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
+    elseif (time.ge.2.and.time.le.10) then
+        do i = 1, 3
+            v(i) = 0.0d0
+            ! bx(i) = 0.d0
+            bx(i) = 0.d0
+            by(i) = 0.d0
+            ! bz(i) = 1.d-12
+            bz(i) = 0.d0
+        end do
+        CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
+    end if
+
+    ! CALL MATRIX(m,U0,C,CP,T,TP,V,BX0,BY0,BZ0)
+    call time_prop(m0, M, psin, psinp1, dt)
 
     do j=1, 20
         do i=1, 20
-            temp_mat(i,j) = psinp1(i)
+            temp_mat(i,1) = psinp1(i)   
+        !     if (i.eq.1) then
+        !         temp_mat(i,j) = psinp1(i)
+        !     else
+        !         temp_mat(i,j) = zero
+        !     end if
         end do
     end do
 
@@ -96,18 +144,24 @@ do time = 1, 500
 
     do i = 1, 3
         write(20+i, wmat) t2, dble(n(i)), dble(mx(i)), dble(my(i)), dble(mz(i))
-        write(20+i,*) '*****************************'
+        ! write(20+i,*) '##############################'
     end do
+    ! write(*,*) t2, (n(1) + n(2) + n(3))
+    ! CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
 
-    do i = 1, 3
-        call dencalc(m, n, mx, my, mz)
-        write(20+i, wmat) t2, dble(n(i)), dble(mx(i)), dble(my(i)), dble(mz(i))
-        write(20+i,*) '*****************************'
-    end do
+    ! CALL ZHEEV( 'V', 'U', 20, M, 20, E, WORK, LWORK, RWORK, INFO )
 
-    ! psin = psinp1
+    ! do i = 1, 3
+    !     call MATRIX(M_org,U0,C,CP,T,TP,V0,BX0,BY0,BZ0)
+    !     CALL ZHEEV( 'V', 'U', 20, M_org, 20, E, WORK, LWORK, RWORK, INFO )
+    !     call dencalc(m_org, n, mx, my, mz)
+    !     write(20+i, wmat) t2, dble(n(i)), dble(mx(i)), dble(my(i)), dble(mz(i))
+    !     write(20+i,*) '##############################'
+    ! end do
 
-    M0 = M
+    psin = psinp1
+
+    ! M0 = M
 end do
 
 do i=1, 3
@@ -126,7 +180,7 @@ END PROGRAM
 !-----------------------------------------------------------------
 !-----------------------------------------------------------------
 
-SUBROUTINE time_prop(M0, t_matrix, psin, psinp1, dt)
+SUBROUTINE time_prop(m0, t_matrix, psin, psinp1, dt)
 IMPLICIT NONE
 
 integer :: I, J, ipiv(20), INFO
@@ -139,14 +193,21 @@ complex(8), PARAMETER :: ZERO=(0.D0,0.D0),ONE=(1.D0,0.D0),IONE=(0.D0,1.D0)
 
 
 !   Right-side of the crank-nicolson propagation.
-
-t_matrix = zero
+! write(*,*) '**********************'
+! do i=1, 20
+!     do j=1, 20
+        
+!         write(*,*) t_matrix(i,j)
+        
+!     end do
+! end do
+! write(*,*) '**********************'
 
 do i = 1, 20
     do j = 1, 20
-        t_matrix(i, j) = -0.5d0 * ione * M0(i,j) * dt 
+        m0(i, j) = -0.5d0 * ione * t_matrix(i,j) * dt 
         if (i.eq.j) then
-            t_matrix(i, j) = one + t_matrix(i, j)
+            m0(i, j) = one + m0(i, j)
         end if
     end do
 end do
@@ -156,7 +217,7 @@ end do
 DO I=1, 20
     rhs(i) = zero
     DO J=1,20
-        rhs(i) = Rhs(i) + t_matrix(I,J) * psin(J)
+        rhs(i) = Rhs(i) + m0(I,J) * psin(J)
     ENDDO
 ENDDO
 
@@ -164,15 +225,30 @@ ENDDO
 
 do i = 1, 20
     do j = 1, 20
-        t_matrix(i, j) = 0.5d0 * ione * M0(i,j) * dt 
+        m0(i, j) = 0.5d0 * ione * t_matrix(i,j) * dt 
         if (i.eq.j) then
-            t_matrix(i, j) = one + t_matrix(i, j)
+            m0(i, j) = one + m0(i, j)
         end if
     end do
 end do
 
+! write(*,*) '**********************'
+! do i=1, 20
+       
+!         write(*,*) psin(i), rhs(i)        
+! end do
+
 !   Call linear equation solver for Psi^(n+1)(t)
-call zgesv(20, 1, t_matrix, 20, IPIV, rhs, 20, INFO)
+call zgesv(20, 1, m0, 20, IPIV, rhs, 20, INFO)
+
+! write(*,*) '**********************'
+! do i=1, 20
+       
+!         write(*,*) rhs(i)
+        
+! end do
+! call exit(-1)
+
 
 do i = 1, 20
     psinp1(i) = rhs(i)
