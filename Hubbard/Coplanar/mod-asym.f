@@ -711,15 +711,16 @@ C  Eigenvalue solver for a complex, non-symmetric matrix.
 
 ****************************************************************************
 
-      subroutine interHam(v,U0,U1,ham)
+      subroutine interHam(v,U0,U1,ham,cn)
       implicit none
 
       real(8), intent(in) :: v(dim*2),U0,U1
       complex(8),intent(out) :: ham(intd,intd)
+      real(8), intent(out) :: cn(intd)
       integer,parameter :: lwork=600
 
       integer :: Ntrp,Nsng,i,j,k,l,ii,jj,info
-      real(8) :: rwork(100),cn(intd)
+      real(8) :: rwork(100)
       complex(8) :: work(lwork)
 !      complex(8) :: dum,vl(6,6),vr(6,6),cn(6)
       complex(8) :: Bp(sites),Bm(sites)

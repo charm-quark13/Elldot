@@ -13,7 +13,8 @@
      &                 BXCZ(NP),VHXCO(NP),BXCXO(NP),BXCYO(NP),BXCZO(NP),
      &                 V(NP),BX(NP),BY(NP),BZ(NP),SHIFT,
      &                 VT(NP),BTX(NP),BTY(NP),BTZ(NP),
-     &                 N(NP),MX(NP),MY(NP),MZ(NP),E(2*NP),RWORK(100)
+     &                 N(NP),MX(NP),MY(NP),MZ(NP),E(2*NP),RWORK(100),
+     &                 delta
 
       DOUBLE COMPLEX M(2*NP,2*NP),GAMMA(2,2,NP,NP),PHI(2*NP,2,NP),
      &               WORK(LWORK)
@@ -167,8 +168,11 @@ C25       CRIT = CRIT + N(I) + DABS(MX(I)) + DABS(MY(I)) + DABS(MZ(I))
       WRITE(*,*)
       WRITE(*,*)'      VXC         BXCX           BXCY             BXCZ'
 
+      delta = (vxc(1) + vxc(2) + vxc(3) + vxc(4))/4.d0
+
       DO 82 I=1,NP
-82    WRITE(*,*)real(VXC(I)),real(BXCX(I)),real(BXCY(I)),real(BXCZ(I))
+82    WRITE(*,*)real(VXC(I)-delta),real(BXCX(I)),
+     &          real(BXCY(I)),real(BXCZ(I))
 
       WRITE(*,*)
       WRITE(*,*)'=====================GS Energy====================='

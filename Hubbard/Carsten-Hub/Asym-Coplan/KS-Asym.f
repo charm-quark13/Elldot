@@ -2,7 +2,7 @@
       IMPLICIT NONE
 
       INTEGER NP,I,ITER,REST,CORR,LWORK,INFO,it,xc,bmag,
-     &        wmflg,wtflg,weflg,nd,revit,j,k,mp2,qrev
+     &        wmflg,wtflg,weflg,nd,revit,j,k,mp2,qrev,bxcflg
       INCLUDE 'dim.inc'
       PARAMETER (LWORK = 100, ND = 4*NP)
 
@@ -14,9 +14,11 @@
      &                 VT(NP),BTX(NP),BTY(NP),BTZ(NP),
      &                 N(NP),MX(NP),MY(NP),MZ(NP),E(2*NP),RWORK(100),
      &                 tplot(np+1),sing(nd),eback, etplot(np+2),
-     &                 emplot(np+2),dl,ec,excl,lambda
+     &                 emplot(np+2),dl,ec,excl,lambda, explot(np+2),
+     &                 mdotb(np+2)
 
-      DOUBLE PRECISION etmats(101,np+2,3), emmats(101,np+2,4)
+      DOUBLE PRECISION etmats(101,np+2,3), emmats(101,np+2,4),
+     &                 exmats(101,np+2,4), mbmats(101,np+2)
 
       DOUBLE COMPLEX M(2*NP,2*NP),GAMMA(2,2,NP,NP),PHI(2*NP,2,NP),
      &               WORK(LWORK)
@@ -29,8 +31,8 @@
       write(tprint,'(a, i3, a)') '(', np + 1, 'e16.6)'
       write(etprint,'(a, i2, a)') '(', np + 2, 'e16.6)'
 
-      xc = 4
-      corr = 1
+      xc = 1
+      corr = 0
       rest = 0
       mp2 = 0
 
@@ -43,8 +45,14 @@
       wmflg = 1
       wtflg = 1
       weflg = 1
+      bxcflg = 1
 
       do bmag = 1, 1
+
+        etmats = 0.d0
+        emmats = 0.d0
+        exmats = 0.d0
+        mbmats = 0.d0
 
         v = 0.d0
         Bx = 0.d0
@@ -174,13 +182,11 @@ C**----------------------------------------------------------------------
           CALL XCPOT_SLATER_MP2(U0,U1,VXC,VHXC,BXCX,BXCY,BXCZ)
        ENDIF
 
-C**   symmetrization, if needed
-!        VHXC(3)=VHXC(2)
-!        VHXC(4)=VHXC(1)
-!        BXCZ(1) = BXCX(4)
-!        BXCZ(2) = BXCX(3)
-!        BXCZ(3) = BXCX(2)
-!        BXCZ(4) = BXCX(1)
+C**   blong calculates the longitudinal component of bxc and returns it
+C**   as the new value for each bxc vector
+
+        call blong(n, mx, my, mz, bxcx, bxcy, bxcz)
+
 
         CALL TCALC (TT,TX,TY,TZ,MX,MY,MZ,BXCX,BXCY,BXCZ)
 
@@ -307,6 +313,13 @@ C         DO 50 J=1,50
 
         tplot(1) = u0
 
+        mbmats(it+1,1) = u0
+        do i = 1, np
+          mbmats(it+1,2+i) = mx(i)*bxcx(i)
+     &                   + my(i)*bxcy(i)
+     &                   + mz(i)*bxcz(i)
+        end do
+        mbmats(it+1,2) = eback
 
         do i = 1, 3
           etmats(it+1,1,i) = u0
@@ -314,10 +327,16 @@ C         DO 50 J=1,50
 
           emmats(it+1,1,i) = u0
           emmats(it+1,2,i) = etot
+
+          exmats(it+1,1,i) = u0
+          exmats(it+1,2,i) = etot
         end do
 
         emmats(it+1,1,4) = u0
         emmats(it+1,2,4) = etot
+
+        exmats(it+1,1,4) = u0
+        exmats(it+1,2,4) = etot
 
         do i=1, np
           etmats(it+1,2+i,1) = tx(i)
@@ -328,6 +347,11 @@ C         DO 50 J=1,50
           emmats(it+1,2+i,2) = mx(i)
           emmats(it+1,2+i,3) = my(i)
           emmats(it+1,2+i,4) = mz(i)
+
+          exmats(it+1,2+i,1) = bxcx(i)
+          exmats(it+1,2+i,2) = bxcy(i)
+          exmats(it+1,2+i,3) = bxcz(i)
+          exmats(it+1,2+i,4) = vhxc(i)
         end do
 
         ! write(*,etprint) etmats(:,:,1)
@@ -340,12 +364,12 @@ C         DO 50 J=1,50
         if (it.eq.100.and.qrev.eq.1) then
           do revit = 100, 0, -1
 
-            if (revit.le.99) then
-    !        if (it.eq.) then
+!            if (revit.le.99) then
+!    !        if (it.eq.) then
               rest = 1
-            else
-              rest = 0
-            end if
+!            else
+!              rest = 0
+!            end if
 
             T = 0.5D0
             U0 = dble(revit)/10.d0
@@ -426,13 +450,11 @@ C**----------------------------------------------------------------------
              CALL XCPOT_SLATER_MP2(U0,U1,VXC,VHXC,BXCX,BXCY,BXCZ)
           ENDIF
 
-C**   symmetrization, if needed
-!            VHXC(3)=VHXC(2)
-!            VHXC(4)=VHXC(1)
-!            BXCZ(1) = BXCX(4)
-!            BXCZ(2) = BXCX(3)
-!            BXCZ(3) = BXCX(2)
-!            BXCZ(4) = BXCX(1)
+C**   blong calculates the longitudinal component of bxc and returns it
+C**   as the new value for each bxc vector
+
+          call blong(n, mx, my, mz, bxcx, bxcy, bxcz)
+
 
             CALL TCALC (TT,TX,TY,TZ,MX,MY,MZ,BXCX,BXCY,BXCZ)
 
@@ -561,15 +583,25 @@ C             DO 50 J=1,50
 
             tplot(1) = u0
 
-
             if (eback.lt.etot) then
               do i = 1, 3
                 etmats(revit+1,2,i) = eback
 
                 emmats(revit+1,2,i) = eback
+
+                exmats(revit+1,2,i) = eback
               end do
 
               emmats(revit+1,2,4) = eback
+
+              exmats(revit+1,2,4) = eback
+
+              do i = 1, np
+                mbmats(revit+1,2+i) = mx(i)*bxcx(i)
+     &                   + my(i)*bxcy(i)
+     &                   + mz(i)*bxcz(i)
+              end do
+              mbmats(revit+1,2) = eback
 
               do i = 1, np
                 etmats(revit+1,2+i,1) = tx(i)
@@ -580,6 +612,11 @@ C             DO 50 J=1,50
                 emmats(revit+1,2+i,2) = mx(i)
                 emmats(revit+1,2+i,3) = my(i)
                 emmats(revit+1,2+i,4) = mz(i)
+
+                exmats(revit+1,2+i,1) = bxcx(i)
+                exmats(revit+1,2+i,2) = bxcy(i)
+                exmats(revit+1,2+i,3) = bxcz(i)
+                exmats(revit+1,2+i,4) = vhxc(i)
               end do
             end if
 
@@ -597,27 +634,27 @@ C             DO 50 J=1,50
         if (wmflg.eq.1) then
           if (bmag.lt.10) then
             write(mwn,'(a,i1,a)') '4pt-B', bmag,
-     &                                '-STLSc-Asym-n.txt'
+     &                                '-Slat-AsymLong-n.txt'
             write(mwx,'(a,i1,a)') '4pt-B', bmag,
-     &                                '-STLSc-Asym-mx.txt'
+     &                                '-Slat-AsymLong-mx.txt'
             write(mwy,'(a,i1,a)') '4pt-B', bmag,
-     &                                '-STLSc-Asym-my.txt'
+     &                                '-Slat-AsymLong-my.txt'
             write(mwz,'(a,i1,a)') '4pt-B', bmag,
-     &                                '-STLSc-Asym-mz.txt'
+     &                                '-Slat-AsymLong-mz.txt'
           elseif (bmag.eq.10) then
             write(mwn,'(a,i2,a)') '4pt-B', bmag,
-     &                                '-STLSc-Asym-n.txt'
+     &                                '-Slat-AsymLong-n.txt'
             write(mwx,'(a,i2,a)') '4pt-B', bmag,
-     &                                '-STLSc-Asym-mx.txt'
+     &                                '-Slat-AsymLong-mx.txt'
             write(mwy,'(a,i2,a)') '4pt-B', bmag,
-     &                                '-STLSc-Asym-my.txt'
+     &                                '-Slat-AsymLong-my.txt'
             write(mwz,'(a,i2,a)') '4pt-B', bmag,
-     &                                '-STLSc-Asym-mz.txt'
+     &                                '-Slat-AsymLong-mz.txt'
           elseif (bmag.eq.11) then
-            write(mwn,'(a)') '4pt-B01-STLSc-Asym-n.txt'
-            write(mwx,'(a)') '4pt-B01-STLSc-Asym-mx.txt'
-            write(mwy,'(a)') '4pt-B01-STLSc-Asym-my.txt'
-            write(mwz,'(a)') '4pt-B01-STLSc-Asym-mz.txt'
+            write(mwn,'(a)') '4pt-B01-Slat-AsymLong-n.txt'
+            write(mwx,'(a)') '4pt-B01-Slat-AsymLong-mx.txt'
+            write(mwy,'(a)') '4pt-B01-Slat-AsymLong-my.txt'
+            write(mwz,'(a)') '4pt-B01-Slat-AsymLong-mz.txt'
           end if
 
           open(100,file = mwn)
@@ -630,28 +667,28 @@ C             DO 50 J=1,50
         if (wtflg.eq.1) then
           if (bmag.lt.10) then
             write(twx,'(a,i1,a)')
-!     &        '4pt-B', bmag, '-STLSc-Asym-tx.txt'
-     &         '4pt-B', bmag, '-STLSc-Asym-tx.txt'
+!     &        '4pt-B', bmag, '-Slat-AsymLong-tx.txt'
+     &         '4pt-B', bmag, '-Slat-AsymLong-tx.txt'
             write(twy,'(a,i1,a)')
-!     &        '4pt-B', bmag, '-STLSc-Asym-ty.txt'
-     &         '4pt-B', bmag, '-STLSc-Asym-ty.txt'
+!     &        '4pt-B', bmag, '-Slat-AsymLong-ty.txt'
+     &         '4pt-B', bmag, '-Slat-AsymLong-ty.txt'
             write(twz,'(a,i1,a)')
-!     &        '4pt-B', bmag, '-STLSc-Asym-tz.txt'
-     &         '4pt-B', bmag, '-STLSc-Asym-tz.txt'
+!     &        '4pt-B', bmag, '-Slat-AsymLong-tz.txt'
+     &         '4pt-B', bmag, '-Slat-AsymLong-tz.txt'
           elseif (bmag.eq.10) then
             write(twx,'(a,i2,a)') '4pt-B', bmag,
-!     &        '-STLSc-Asym-tx.txt'
-     &         '-STLSc-Asym-tx.txt'
+!     &        '-Slat-AsymLong-tx.txt'
+     &         '-Slat-AsymLong-tx.txt'
             write(twy,'(a,i2,a)') '4pt-B', bmag,
-!     &        '-STLSc-Asym-ty.txt'
-     &         '-STLSc-Asym-ty.txt'
+!     &        '-Slat-AsymLong-ty.txt'
+     &         '-Slat-AsymLong-ty.txt'
             write(twz,'(a,i2,a)') '4pt-B', bmag,
-!     &        '-STLSc-Asym-tz.txt'
-     &         '-STLSc-Asym-tz.txt'
+!     &        '-Slat-AsymLong-tz.txt'
+     &         '-Slat-AsymLong-tz.txt'
           elseif (bmag.eq.11) then
-            write(twx,'(a)') '4pt-B01-STLSc-Asym-tx.txt'
-            write(twy,'(a)') '4pt-B01-STLSc-Asym-ty.txt'
-            write(twz,'(a)') '4pt-B01-STLSc-Asym-tz.txt'
+            write(twx,'(a)') '4pt-B01-Slat-AsymLong-tx.txt'
+            write(twy,'(a)') '4pt-B01-Slat-AsymLong-ty.txt'
+            write(twz,'(a)') '4pt-B01-Slat-AsymLong-tz.txt'
           end if
 
           open(201,file = twx)
@@ -659,15 +696,61 @@ C             DO 50 J=1,50
           open(203,file = twz)
         end if
 
+        if (bxcflg.eq.1) then
+          if (bmag.lt.10) then
+            write(mwn,'(a)') '4pt-B1-Slat-AsymLong-vhxc.txt'
+            write(twx,'(a,i1,a)')
+!     &        '4pt-B', bmag, '-Slat-AsymLong-tx.txt'
+     &         '4pt-B', bmag, '-Slat-AsymLong-bxcx.txt'
+            write(twy,'(a,i1,a)')
+!     &        '4pt-B', bmag, '-Slat-AsymLong-ty.txt'
+     &         '4pt-B', bmag, '-Slat-AsymLong-bxcy.txt'
+            write(twz,'(a,i1,a)')
+!     &        '4pt-B', bmag, '-Slat-AsymLong-tz.txt'
+     &         '4pt-B', bmag, '-Slat-AsymLong-bxcz.txt'
+          elseif (bmag.eq.10) then
+            write(twx,'(a,i2,a)') '4pt-B', bmag,
+!     &        '-Slat-AsymLong-tx.txt'
+     &         '-Slat-AsymLong-bxcx.txt'
+            write(twy,'(a,i2,a)') '4pt-B', bmag,
+!     &        '-Slat-AsymLong-ty.txt'
+     &         '-Slat-AsymLong-bxcy.txt'
+            write(twz,'(a,i2,a)') '4pt-B', bmag,
+!     &        '-Slat-AsymLong-tz.txt'
+     &         '-Slat-AsymLong-bxcz.txt'
+          elseif (bmag.eq.11) then
+            write(twx,'(a)') '4pt-B01-Slat-AsymLong-bxcx.txt'
+            write(twy,'(a)') '4pt-B01-Slat-AsymLong-bxcy.txt'
+            write(twz,'(a)') '4pt-B01-Slat-AsymLong-bxcz.txt'
+          end if
+
+          open(301,file = twx)
+          open(302,file = twy)
+          open(303,file = twz)
+          open(304,file = mwn)
+
+          open(400,file = '4pt-Slat-AsymLong-mdotb.txt')
+        end if
+
         do i = 1, 4
           do j = 1,101
             do k = 1, 2+np
               if (i.lt.4) then
+                if (i.eq.1) then
+                  mdotb(k) = mbmats(j,k)
+                endif
                 etplot(k) = etmats(j,k,i)
               end if
+              explot(k) = exmats(j,k,i)
               emplot(k) = emmats(j,k,i)
             end do
-          if (i.lt.4) write(200+i,etprint) etplot
+          if (i.lt.4) THEN
+            if (i.eq.1) then
+              write(399+i,etprint) mdotb
+            end if
+            write(200+i,etprint) etplot
+          end if
+          write(300+i,etprint) explot
           write(99+i,etprint) emplot
           end do
         end do
@@ -685,11 +768,61 @@ C             DO 50 J=1,50
           close(203)
         end if
 
+        if (bxcflg.eq.1) then
+          close(301)
+          close(302)
+          close(303)
+          close(304)
+          close(400)
+        end if
+
       end do
 
       END
 
 C************************************************************************
+
+      subroutine blong(n,mx,my,mz,bxcx,bxcy,bxcz)
+      implicit none
+
+      integer :: np
+      INCLUDE 'dim.inc'
+
+      real(8),intent(in) :: n(np), mx(np), my(np), mz(np)
+
+      real(8),intent(inout) :: bxcx(np), bxcy(np), bxcz(np)
+
+      real(8) :: blx(np), bly(np), blz(np)
+
+      integer :: I,x,y,z
+
+      real(8) :: mdotb(np), mm(np)
+
+
+      do i = 1,np
+        mm(i) = dsqrt(mx(i)**2 + my(i)**2 + mz(i)**2)
+      end do
+
+      do i = 1, np
+        mdotb(i) = mx(i)*bxcx(i) + my(i)*BXCY(I) + mz(i)*bxcz(i)
+      end do
+
+      do i = 1, np
+        blx(i) = mdotb(i)*mx(i)/mm(i)**2
+        bly(i) = mdotb(i)*my(i)/mm(i)**2
+        blz(i) = mdotb(i)*mz(i)/mm(i)**2
+      end do
+
+      do i=1, np
+        bxcx(i) = blx(i)
+        bxcy(i) = bly(i)
+        bxcz(i) = blz(i)
+      end do
+
+      end subroutine
+
+C************************************************************************
+
       SUBROUTINE XCPOT_STLS(U0,U1,VXC,VHXC,BXCX,BXCY,BXCZ,EXC,
      &                      LAMBDA,ITER,XC)
       IMPLICIT NONE
