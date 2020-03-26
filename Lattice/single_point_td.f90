@@ -34,8 +34,14 @@ by0 = BY
 bz0 = BZ
 
 T = .6d0
-
 TP = T
+
+C = 0.5d0
+CP = C
+
+open(1, file='constants.txt')
+read(1, *) c, t
+close(1)
 
 MODE = 2
 
@@ -43,8 +49,7 @@ MODE = 2
 !           READ(1,*)V(I),BX(I),BY(I),BZ(I)
 !5       CONTINUE
 
-C = 0.5d0
-CP = C
+
 
 CALL MATRIX(M,U0,C,CP,T,TP,V,BX,BY,BZ)
 
