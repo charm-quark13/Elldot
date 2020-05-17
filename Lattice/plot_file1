@@ -1,0 +1,53 @@
+set terminal pngcairo size 1200, 800
+
+
+do for [j=2:5] {
+
+    set yrange[-.5:.5]
+
+    set output 'comparison_soc_p2z_'.j.'.png'
+ 
+    # p 'site-1_KStd_planar2zero.txt' u 1:j w l lc rgb 'black' \
+    # , 'site-2_KStd_planar2zero.txt' u 1:j w l lc rgb 'black' \
+    # , 'site-3_KStd_planar2zero.txt' u 1:j w l lc rgb 'black' \
+    # , 'site-1_td_planar2zero.txt' u 1:j w l lc rgb 'red' \
+    # , 'site-2_td_planar2zero.txt' u 1:j w l lc rgb 'red' \
+    # , 'site-3_td_planar2zero.txt' u 1:j w l lc rgb 'red' \
+    # , 'site-1_KStd_planar2zero_TC.txt' u 1:j w l lc rgb 'blue' \
+    # , 'site-2_KStd_planar2zero_TC.txt' u 1:j w l lc rgb 'blue' \
+    # , 'site-3_KStd_planar2zero_TC.txt' u 1:j w l lc rgb 'blue' 
+    # p 'site-1_KStd_planar2zero_noSOC.txt' u 1:j w l lc rgb 'gray' \
+    # , 'site-2_KStd_planar2zero_noSOC.txt' u 1:j w l lc rgb 'gray' \
+    # , 'site-3_KStd_planar2zero_noSOC.txt' u 1:j w l lc rgb 'gray' \
+    # , 'site-1_td_planar2zero_noSOC.txt' u 1:j w l lc rgb 'orange' \
+    # , 'site-2_td_planar2zero_noSOC.txt' u 1:j w l lc rgb 'orange' \
+    # , 'site-3_td_planar2zero_noSOC.txt' u 1:j w l lc rgb 'orange' 
+    # p 'site-1_KStd_planar2zero_lr.txt' u 1:j w l lc rgb 'black' \
+    # , 'site-2_KStd_planar2zero_lr.txt' u 1:j w l lc rgb 'black' \
+    # , 'site-3_KStd_planar2zero_lr.txt' u 1:j w l lc rgb 'black' \
+    # , 'site-1_td_planar2zero_lr.txt' u 1:j w l lc rgb 'red' \
+    # , 'site-2_td_planar2zero_lr.txt' u 1:j w l lc rgb 'red' \
+    # , 'site-3_td_planar2zero_lr.txt' u 1:j w l lc rgb 'red' \
+    # , 'site-1_KStd_planar2zero_lr_TC.txt' u 1:j w l lc rgb 'blue' \
+    # , 'site-2_KStd_planar2zero_lr_TC.txt' u 1:j w l lc rgb 'blue' \
+    # , 'site-3_KStd_planar2zero_lr_TC.txt' u 1:j w l lc rgb 'blue' 
+    p 'site-1_KStd_planar2zero_c_ 1.txt' u 1:j w l lc rgb 'black' \
+    , 'site-2_KStd_planar2zero_c_ 1.txt' u 1:j w l lc rgb 'black' \
+    , 'site-3_KStd_planar2zero_c_ 1.txt' u 1:j w l lc rgb 'black' \
+    , 'site-1_KStd_planar2zero_c_ 2.txt' u 1:j w l lc rgb 'green' \
+    , 'site-2_KStd_planar2zero_c_ 2.txt' u 1:j w l lc rgb 'green' \
+    , 'site-3_KStd_planar2zero_c_ 2.txt' u 1:j w l lc rgb 'green' \
+    , 'site-1_KStd_planar2zero_c_ 3.txt' u 1:j w l lc rgb 'blue' \
+    , 'site-2_KStd_planar2zero_c_ 3.txt' u 1:j w l lc rgb 'blue' \
+    , 'site-3_KStd_planar2zero_c_ 3.txt' u 1:j w l lc rgb 'blue' \
+    , 'site-1_KStd_planar2zero_c_ 4.txt' u 1:j w l lc rgb 'purple' \
+    , 'site-2_KStd_planar2zero_c_ 4.txt' u 1:j w l lc rgb 'purple' \
+    , 'site-3_KStd_planar2zero_c_ 4.txt' u 1:j w l lc rgb 'purple' \
+    , 'site-1_KStd_planar2zero_c_ 5.txt' u 1:j w l lc rgb 'cyan' \
+    , 'site-2_KStd_planar2zero_c_ 5.txt' u 1:j w l lc rgb 'cyan' \
+    , 'site-3_KStd_planar2zero_c_ 5.txt' u 1:j w l lc rgb 'cyan' \
+    , 'site-1_KStd_planar2zero_c_ 6.txt' u 1:j w l lc rgb 'magenta' \
+    , 'site-2_KStd_planar2zero_c_ 6.txt' u 1:j w l lc rgb 'magenta' \
+    , 'site-3_KStd_planar2zero_c_ 6.txt' u 1:j w l lc rgb 'magenta' 
+
+}
