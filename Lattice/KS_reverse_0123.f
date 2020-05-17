@@ -17,6 +17,8 @@
       DOUBLE COMPLEX M(6,6),WORK(LWORK),GAMMA(2,2,3,3),PHI(6,6)
       COMMON /EVALS/ E,PHI,GAMMA
 
+      ! alter 0field.txt to tiny difference in scalar potentials
+
 !      T = 0.5D0
 !      WRITE(*,*)'C?'
 !      READ(*,*)C
@@ -106,7 +108,7 @@ C        open(111, file='planar_E-noGuess.txt')
 C      open(1, file='smallz_field.txt')
 C      open(1, file='0field.txt')
 C      open(1, file='planar_field.txt')
-      open(1, file='0field_PDiff.txt')
+      open(1, file='0field.txt')
 
 
       DO 5 I=1,3
@@ -146,7 +148,7 @@ C      open(1, file='planar_field.txt')
             end do
           end if
 
-          c = (250 - k) * .01d0
+          c = (250 - k) * .025d0
 
           cp = c
 
@@ -207,6 +209,8 @@ C      MZ(3) = MZ(1)
               EOLD = E(1)
               GOTO 1
           ENDIF
+
+          write(*,*) k, 'loop completed'
 
 !          WRITE(10,*)t/U0, C/U0,real(N(1)),real(N(2)),real(N(3))
 !          WRITE(11,*)t/U0, C/U0,real(MX(1)),real(MX(2)),real(MX(3))
@@ -446,30 +450,31 @@ C************************************************************************
       DOUBLE COMPLEX M(6,6),ZERO,ONE,IONE
       PARAMETER (ZERO=(0.D0,0.D0),ONE=(1.D0,0.D0),IONE=(0.D0,1.D0))
 
-      DO 1 I=1,6
-      DO 1 J=1,6
-1        M(I,J) = ZERO
+      DO I=1,6
+            DO J=1,6
+                  M(I,J) = ZERO
+            end do
+      end do
 
-      DO 10 I=1,3
-         M(I,I) = (V(I) + BZ(I))*ONE
-         M(I,I+3) = BX(I)*ONE - BY(I)*IONE
-         M(I+3,I+3) = (V(I) - BZ(I))*ONE
-         M(I+3,I) = BX(I)*ONE + BY(I)*IONE
-10    CONTINUE
+      DO I=1,3
+            M(I,I) = (V(I) + BZ(I))*ONE
+            M(I,I+3) = BX(I)*ONE - BY(I)*IONE
+            M(I+3,I+3) = (V(I) - BZ(I))*ONE
+            M(I+3,I) = BX(I)*ONE + BY(I)*IONE
+      end do
 
-      M(1,2) = -T*ONE + C*IONE
-      M(2,3) = -T*ONE + C*IONE
-      M(1,3) = -TP*ONE - CP*IONE
-      M(4,5) = -T*ONE - C*IONE
-      M(5,6) = -T*ONE - C*IONE
-      M(4,6) = -TP*ONE + CP*IONE
+      do i = 1, 2
+            m(i, i+1) = -t * one + c * ione
+            m(i+3, i+4) = -t * one - c * ione
+            m(i+1, i) = -t * one - c * ione
+            m(i+4, i+3) = -t * one + c * ione
+      end do
 
-      DO 2 I=1,2
-      DO 2 J=I+1,3
-         M(J,I) = DCONJG(M(I,J))
-2     CONTINUE
-
-      RETURN
+      m(1, 3) = -tp * one - cp * ione
+      m(3, 1) = -tp * one + cp * ione
+      m(4, 6) = -tp * one + cp * ione
+      m(6, 4) = -tp * one - cp * ione
+  
       END
 C************************************************************************
 C************************************************************************
