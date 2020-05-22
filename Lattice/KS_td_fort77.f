@@ -2,24 +2,25 @@
       IMPLICIT NONE
 
       INTEGER :: I,j,k,INFO,MODE,ITER, xc_slater, corr, t_it, rest,
-     &            pc_count, L
+     &            pc_count, L, out
       !integer :: J,k, vec, krev, xc_guess
-      integer, parameter :: lwork=100, np=3, pc=2
+      integer, parameter :: lwork=100, np=3, pc=2, proj_out=1
 
-      real(8) :: C,CP,T,TP,V(3),BX(3),BY(3),BZ(3),
+      real(8) :: C,CP,T,TP,V(3),BX(3),BY(3),BZ(3),bzd(3),
      &           VT(3),BXT(3),BYT(3),BZT(3),VXC(3),
      &           VHXC(3),BXCX(3),BXCY(3),BXCZ(3),
      &           vxc0(3),VHXC0(3),BXCX0(3),BXCY0(3),BXCZ0(3),
      &           N(3),MX(3),MY(3),MZ(3),E(6),RWORK(100), 
      &           dt, time, vss(3),bxss(3),byss(3),bzss(3),
-     &           TT(3),TX(3),TY(3),TZ(3), flag_vec(3),
-     &           vxc1(3),vhxc1(3),BXCX1(3),BXCY1(3),BXCZ1(3)
+     &           TT(3),TX(3),TY(3),TZ(3), flag_vec(3),omega,
+     &           vxc1(3),vhxc1(3),BXCX1(3),BXCY1(3),BXCZ1(3),
+     &           amp
       real(8) :: U0,MIX,TOL,EOLD,EH,ETOT,EVXC,EXC,EX,EC,CRIT
 
       character(100) ::  wmat, wsite
 
       complex(8) :: M(6,6),WORK(LWORK),GAMMA(2,2,3,3),PHI(2*NP,2,NP), 
-     &              m_temp(6,6), m_temp1(6,6)
+     &              m_temp(6,6), m_temp1(6,6), m_gs(6,6)
       complex(8), parameter :: one = (1.d0, 0.d0), 
      &                         ione = (0.d0, 1.d0), 
      &                         zero = (0.d0, 0.d0)
@@ -33,6 +34,8 @@
       U0 = 1.d0
       L = 1
       
+      amploop : do out = 1, 5
+
       phi = zero
 
       xc_slater = 1
@@ -54,8 +57,10 @@
       close(1)
 
       open(1, file='constants.txt')
-      read(1,*) c, t
+      read(1,*) c, t, omega
       close(1)
+
+      c = 0.d0
 
       U0 = 1.d0
 
@@ -142,13 +147,39 @@
       EXC = EX + EC
       ETOT = E(1) + E(2) + E(3) + EH + EVXC + EXC
 
+      call tcalc(TT,TX,TY,TZ,MX,MY,MZ,BXCX,BXCY,BXCZ)
+
+
+      amp = dble(out)
+
       do i = 1, 3
-            write(wsite, '(a, i1, a)') 'site-', i, '_KStddensity.txt'
+            if (proj_out.eq.1) then
+                  write(wsite, '(a, i1, a, i1, a)') 'site-', i
+     &                                       , '_strong_c_a', out
+     &                                       , 'nsoc.txt'
+            else
+                  write(wsite, '(a, i1, a, i1, a)') 'site-', i
+     &                                       , '_strong_a', out
+     &                                       , 'nsoc.txt'
+            end if
             open(20+i, file=wsite)
+
+            if (proj_out.eq.1) then
+                  write(wsite, '(a, i1, a, i1, a)') 'site-', i
+     &                                       , '_torqueSt_c_a'
+     &                                       , out, 'nsoc.txt'
+            else
+                  write(wsite, '(a, i1, a, i1, a)') 'site-', i
+     &                                       , '_torqueSt_a'
+     &                                       , out, 'nsoc.txt'
+            end if
+            open(200+i, file=wsite)
       end do
 
       do i = 1, 3
             write(20+i, wmat) 0.d0, n(i), mx(i), my(i), mz(i)
+
+            write(200+i, wmat) 0.d0, tt(i), tx(i), ty(i), tz(i)
       end do
 
       open(100, file='planar_field.txt')
@@ -159,20 +190,27 @@
 
       close(100)
 
+      ! v = 0.d0
+
 !------------------------------------------------------------------------
 !**   Begin time-dependent iterations.
 !------------------------------------------------------------------------
-
-      m_temp = m
+      m_gs = m
+      m_temp = m_gs
       ! ^ set density matrix to the converged groud state.
+      time = 0.d0
 
-
-      timeprop : do t_it = 1, 1000
+      timeprop : do t_it = 1, 1500
             TIME = TIME + DT
 
-C      !      DO 16 I=1,NP
-C      !         BXD(I) = BX(I) + 0.01D0*DSIN(OMEGA*(TIME-DT/2.D0))
-C      !16    CONTINUE
+            DO I=1,3
+                  bzd(I) = bx(I) 
+     &                     + amp*dexp(-1.d0*(time - 3.d0)**2)
+     &                     * dsin(omega*(TIME-DT/2.D0))
+                  ! bzd(i) = bz(i)
+            end do
+
+            write(99,*) time, bzd(1)
 
             DO I=1,NP
                   vhxc0(I) = vhxc(I)
@@ -190,9 +228,9 @@ C      !16    CONTINUE
 ! C                  write(*,*) pc_count
                   DO I=1,NP
                         VT(I) = V(I) + vhxc(I)
-                        BXT(I) = BX(I) + BXCX(I)
-                        BYT(I) = BY(I) + BXCY(I)
-                        BZT(I) = BZ(I) + BXCZ(I)
+                        BXT(I) = bzd(I) + BXCX(I)
+                        BYT(I) = by(I) + BXCY(I)
+                        BZT(I) = bz(I) + BXCZ(I)
                   ENDDO
 
                   CALL MATRIX(M,C,CP,T,TP,VT,BXT,BYT,BZT)
@@ -238,6 +276,8 @@ C      !16    CONTINUE
 
             CALL DENCALC(M_temp1,N,MX,MY,MZ)
             write(*,*) n(1) + n(2) + n(3) 
+
+
       !       If (L.EQ.2) THEN
 
       ! !**   project out transverse BXC
@@ -259,21 +299,99 @@ C      !16    CONTINUE
       !       !      end do
       !       ENDIF
 
+            if (proj_out.eq.1) then
+                  call blong(n, mx, my, mz, bxcx, bxcy, bxcz)
+            end if
+
+            call tcalc(TT,TX,TY,TZ,MX,MY,MZ,BXCX,BXCY,BXCZ)
+
             do i = 1, 3
                   write(20+i, wmat) time, dble(n(i)), dble(mx(i)),
      &                                  dble(my(i)), dble(mz(i))
-            end do
 
+                  write(200+i, wmat) time, tt(i), tx(i), ty(i), tz(i)
+            end do
 
             m_temp = m_temp1
       end do timeprop
 
       do i = 1, 3
             close(20+i)
+            close(200+i)
       end do
 
+      end do amploop
 
       END
+
+!************************************************************************
+!************************************************************************
+!************************************************************************
+
+      SUBROUTINE TCALC (TT,TX,TY,TZ,MX,MY,MZ,BXCX,BXCY,BXCZ)
+      IMPLICIT NONE
+      
+      INTEGER :: I
+      integer, parameter :: np=3
+
+      real(8) :: TT(3),TX(NP),TY(NP),TZ(NP),MX(NP),MY(NP),
+     &                 MZ(NP),BXCX(NP),BXCY(NP),BXCZ(NP)
+
+      TT(1)=0.D0
+      TT(2)=0.D0
+      TT(3)=0.D0
+      DO I=1,NP
+            TX(I) = MY(I)*BXCZ(I) - MZ(I)*BXCY(I)
+            TY(I) = MZ(I)*BXCX(I) - MX(I)*BXCZ(I)
+            TZ(I) = MX(I)*BXCY(I) - MY(I)*BXCX(I)
+            TT(1) = TT(1) + TX(I)
+            TT(2) = TT(2) + TY(I)
+            TT(3) = TT(3) + TZ(I)
+      ENDDO    
+
+      END
+
+!************************************************************************
+!************************************************************************
+!************************************************************************
+
+      subroutine blong(n,mx,my,mz,bxcx,bxcy,bxcz)
+      implicit none
+
+      integer, parameter :: np=3
+
+      real(8),intent(in) :: n(np), mx(np), my(np), mz(np)
+
+      real(8),intent(inout) :: bxcx(np), bxcy(np), bxcz(np)
+
+      real(8) :: blx(np), bly(np), blz(np)
+
+      integer :: I,x,y,z
+
+      real(8) :: mdotb(np), mm(np)
+
+
+      do i = 1,np
+            mm(i) = dsqrt(mx(i)**2 + my(i)**2 + mz(i)**2)
+      end do
+
+      do i = 1, np
+            mdotb(i) = mx(i)*bxcx(i) + my(i)*BXCY(I) + mz(i)*bxcz(i)
+      end do
+
+      do i = 1, np
+            blx(i) = mdotb(i)*mx(i)/mm(i)**2
+            bly(i) = mdotb(i)*my(i)/mm(i)**2
+            blz(i) = mdotb(i)*mz(i)/mm(i)**2
+      end do
+
+      do i=1, np
+            bxcx(i) = blx(i)
+            bxcy(i) = bly(i)
+            bxcz(i) = blz(i)
+      end do
+
+      end subroutine
 
 !************************************************************************
 !************************************************************************
@@ -400,10 +518,10 @@ C************************************************************************
       end do
 
       do i = 1, 2
-            m(i, i+1) = -t * one + cp * ione
-            m(i+3, i+4) = -t * one - cp * ione
-            m(i+1, i) = -t * one - cp * ione
-            m(i+4, i+3) = -t * one + cp * ione
+            m(i, i+1) = -t * one + c * ione
+            m(i+3, i+4) = -t * one - c * ione
+            m(i+1, i) = -t * one - c * ione
+            m(i+4, i+3) = -t * one + c * ione
       end do
 
       m(1, 3) = -tp * one - cp * ione
@@ -758,15 +876,15 @@ C************************************************************************
       ENDDO    
 
       DO I=1,2
-      DO J=1,2
-      DO K=1,NP
-      DO L=1,NP
-         g(I,J,K,L) = p(1,I,K)*DCONJG(p(1,J,L))
-     &                  + p(2,I,K)*DCONJG(p(2,J,L))
-     &                  + p(3,I,K)*DCONJG(p(3,J,L))
-      ENDDO    
-      ENDDO    
-      ENDDO    
+            DO J=1,2
+                  DO K=1,NP
+                        DO L=1,NP
+                           g(I,J,K,L) = p(1,I,K)*DCONJG(p(1,J,L))
+     &                                  + p(2,I,K)*DCONJG(p(2,J,L))
+     &                                  + p(3,I,K)*DCONJG(p(3,J,L))
+                        ENDDO    
+                  ENDDO    
+            ENDDO    
       ENDDO    
 
       nuu = zero
